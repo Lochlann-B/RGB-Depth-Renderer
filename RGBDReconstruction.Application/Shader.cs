@@ -1,10 +1,11 @@
 ﻿using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 
 namespace RGBDReconstruction.Application;
 
 public class Shader
 {
-    private int Handle;
+    private int _handle;
 
     public Shader(string vertexPath, string fragmentPath)
     {
@@ -40,34 +41,46 @@ public class Shader
             Console.WriteLine(infoLog);
         }
 
-        Handle = GL.CreateProgram();
+        _handle = GL.CreateProgram();
         
-        GL.AttachShader(Handle, VertexShader);
-        GL.AttachShader(Handle, FragmentShader);
+        GL.AttachShader(_handle, VertexShader);
+        GL.AttachShader(_handle, FragmentShader);
         
-        GL.LinkProgram(Handle);
+        GL.LinkProgram(_handle);
         
-        GL.GetProgram(Handle, GetProgramParameterName.LinkStatus, out int successLink);
+        GL.GetProgram(_handle, GetProgramParameterName.LinkStatus, out int successLink);
         if (successLink == 0)
         {
-            string infoLog = GL.GetProgramInfoLog(Handle);
+            string infoLog = GL.GetProgramInfoLog(_handle);
             Console.WriteLine(infoLog);
         }
         
-        GL.DetachShader(Handle, VertexShader);
-        GL.DetachShader(Handle, FragmentShader);
+        GL.DetachShader(_handle, VertexShader);
+        GL.DetachShader(_handle, FragmentShader);
         GL.DeleteShader(FragmentShader);
         GL.DeleteShader(VertexShader);
     }
 
     public void Use()
     {
-        GL.UseProgram(Handle);
+        GL.UseProgram(_handle);
     }
     
     public int GetAttribLocation(string attribName)
     {
-        return GL.GetAttribLocation(Handle, attribName);
+        return GL.GetAttribLocation(_handle, attribName);
+    }
+
+    public void SetUniformInt(string name, int value)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.Uniform1(location, value);
+    }
+
+    public void SetUniformMatrix4f(string name, ref Matrix4 mat4)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.UniformMatrix4(location, true, ref mat4);
     }
     
     private bool _disposedValue = false;
@@ -76,7 +89,7 @@ public class Shader
     {
         if (!_disposedValue)
         {
-            GL.DeleteProgram(Handle);
+            GL.DeleteProgram(_handle);
 
             _disposedValue = true;
         }
