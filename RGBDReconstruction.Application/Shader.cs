@@ -77,10 +77,22 @@ public class Shader
         GL.Uniform1(location, value);
     }
 
+    public void SetUniformVec3(string name, ref Vector3 values)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.Uniform3(location, values);
+    }
+
     public void SetUniformMatrix4f(string name, ref Matrix4 mat4)
     {
         int location = GL.GetUniformLocation(_handle, name);
         GL.UniformMatrix4(location, true, ref mat4);
+    }
+    
+    public void SetUniformMatrix3f(string name, ref Matrix3 mat3)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.UniformMatrix3(location, true, ref mat3);
     }
     
     private bool _disposedValue = false;

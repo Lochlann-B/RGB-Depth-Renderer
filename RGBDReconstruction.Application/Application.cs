@@ -13,22 +13,58 @@ public class Application(int width, int height, string title) : GameWindow(GameW
 {
     
     // TODO: Get rid of this tutorial stuff!
-    private readonly float[] _vertices = {
-        //Position          Texture coordinates
-        0.5f,  0.5f, 0.0f, 1.0f, 1.0f, // top right
-        0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f  // top left
-    };
-    private readonly uint[] _indices =
-    {
-        0, 1, 3,
-        1, 2, 3
-    };
+private readonly float[] _vertices =
+        {
+             // Position          Normal
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Front face
+             0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Back face
+             0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, // Left face
+            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, // Right face
+             0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, // Bottom face
+             0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, // Top face
+             0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+        };
+
+    private Vector3 _lightPos;
 
     private int _vertexBufferObject;
-    private int _elementBufferObject;
     private int _vertexArrayObject;
+
+    private int _lightVertexArrayObject;
 
     private int _width;
     private int _height;
@@ -36,12 +72,13 @@ public class Application(int width, int height, string title) : GameWindow(GameW
     private Camera _camera;
 
     private Shader _shader;
-    private Texture _texture1;
-    private Texture _texture2;
+    private Shader _lightingShader;
 
     private Matrix4 _model;
     private Matrix4 _view;
     private Matrix4 _projection;
+
+    private Matrix4 _lightModel;
 
     private Vector2 _prevMousePos;
     private float _sensitivity;
@@ -51,6 +88,8 @@ public class Application(int width, int height, string title) : GameWindow(GameW
     {
         // Runs once when the window opens. Put initialization code here!
         base.OnLoad();
+        
+        GL.Enable(EnableCap.DepthTest);
 
         GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
@@ -78,44 +117,54 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         GL.BindVertexArray(_vertexArrayObject);
         
         // Element buffer needs to be bound *after* the VAO has been bound
-        _elementBufferObject = GL.GenBuffer();
-        GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
         
-        GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
-        
-        _shader = new Shader("./shader.vert", "./shader.frag");
-        _shader.Use();
+        _lightingShader = new Shader("./shaders/shader.vert", "./shaders/lighting.frag");
+        _lightingShader.Use();
         
         // The 'index' param below refers to the location in the shader program we are putting data into.
         // That is, the layout (location = 0) in shader.vert
         GL.EnableVertexAttribArray(0);
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
-        
+        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
 
-        int texCoordLocation = _shader.GetAttribLocation("aTexCoord");
-        GL.EnableVertexAttribArray(texCoordLocation);
-        GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
+        var normalLoc = _lightingShader.GetAttribLocation("aNormal");
+        GL.EnableVertexAttribArray(normalLoc);
+        GL.VertexAttribPointer(normalLoc, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
         
         
         // The VBO that the VAO takes its data from is determined by the VBO currently bound to the ArrayBuffer (i.e. that on line 43)
 
-        _texture1 = new Texture("./resources/container.jpg");
-        _texture1.Use(TextureUnit.Texture0);
+        var objectColor = new Vector3(0.5f, 0.5f, 0.0f);
+        var lightColor = new Vector3(1.0f, 1.0f, 1.0f);
+        _lightingShader.SetUniformVec3("objectColor", ref objectColor);
+        _lightingShader.SetUniformVec3("lightColor", ref lightColor);
 
-        _texture2 = new Texture("./resources/awesomeface.png");
-        _texture2.Use(TextureUnit.Texture1);
-        
-        _shader.SetUniformInt("texture1", 0);
-        _shader.SetUniformInt("texture2", 1);
-
-        _model = Matrix4.CreateRotationZ(Single.Pi / 2);
+        _model = Matrix4.Identity;
         _view = Matrix4.CreateTranslation(0.0f, 0.0f, -3.0f);
         _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45.0f), Size.X / (float)Size.Y, 0.1f, 100.0f);
-        _shader.SetUniformMatrix4f("model", ref _model);
+        _lightingShader.SetUniformMatrix4f("model", ref _model);
+        _lightingShader.SetUniformMatrix4f("view", ref _view);
+        _lightingShader.SetUniformMatrix4f("projection", ref _projection);
+
+        // shader for the light source
+        _lightVertexArrayObject = GL.GenVertexArray();
+        GL.BindVertexArray(_lightVertexArrayObject);
+        
+        _shader = new Shader("./shaders/shader.vert", "./shaders/shader.frag");
+        _shader.Use();
+
+        var vertexLocation = _shader.GetAttribLocation("aPosition");
+        GL.EnableVertexAttribArray(vertexLocation);
+        GL.VertexAttribPointer(vertexLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+
+        _lightPos = new Vector3(1.2f, 1.0f, 2.0f);
+
+        _lightModel = Matrix4.Identity;
+        _lightModel *= Matrix4.CreateScale(0.5f);
+        _lightModel *= Matrix4.CreateTranslation(_lightPos);
+        _shader.SetUniformMatrix4f("model", ref _lightModel);
         _shader.SetUniformMatrix4f("view", ref _view);
         _shader.SetUniformMatrix4f("projection", ref _projection);
-        
-        
+
     }
 
     protected override void OnRenderFrame(FrameEventArgs args)
@@ -123,23 +172,49 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         _view = _camera.LookAt;
         _projection = _camera.CameraProjectionMatrix;
         
-        GL.Clear(ClearBufferMask.ColorBufferBit);
-
+        base.OnRenderFrame(args);
+        
+        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+        
+        
+        
         // Render frame code goes here - run every frame
-        GL.BindVertexArray(_vertexArrayObject);
-        _shader.SetUniformMatrix4f("model", ref _model);
+        GL.BindVertexArray(_lightVertexArrayObject);
+        _shader.Use();
+        _shader.SetUniformMatrix4f("model", ref _lightModel);
         _shader.SetUniformMatrix4f("view", ref _view);
         _shader.SetUniformMatrix4f("projection", ref _projection);
         
-        _texture1.Use(TextureUnit.Texture0);
-        _texture2.Use(TextureUnit.Texture1);
-        _shader.Use();
         
-        GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
+        
+        GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        
+        GL.BindVertexArray(_vertexArrayObject);
+        _lightingShader.Use();
+        _lightingShader.SetUniformMatrix4f("model", ref _model);
+        _lightingShader.SetUniformMatrix4f("view", ref _view);
+        _lightingShader.SetUniformMatrix4f("projection", ref _projection);
+
+        var vLightPos = new Vector4(_lightPos, 1.0f);
+        vLightPos *= _view;
+        var v3LightPos = vLightPos.Xyz;
+        _lightingShader.SetUniformVec3("lightPos", ref v3LightPos);
+
+        var normalMat = new Matrix3(Matrix4.Transpose(Matrix4.Invert(Matrix4.Mult(_model, _view))));
+        _lightingShader.SetUniformMatrix3f("normal", ref normalMat);
+        
+        var objectColor = new Vector3(1.0f, 0.5f, 0.31f);
+        var lightColor = new Vector3(1.0f, 1.0f, 1.0f);
+        _lightingShader.SetUniformVec3("objectColor", ref objectColor);
+        _lightingShader.SetUniformVec3("lightColor", ref lightColor);
+        
+                
+                
+        GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
         
         Context.SwapBuffers();
         
-        base.OnRenderFrame(args);
+        
     }
 
     protected override void OnResize(ResizeEventArgs e)
