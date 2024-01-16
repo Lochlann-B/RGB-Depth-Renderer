@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Emgu.CV" Version="4.8.1.5350" />
+      <PackageReference Include="Emgu.CV.runtime.windows" Version="4.8.1.5350" />
+      <PackageReference Include="OpenCV" Version="2.4.11" />
+      <PackageReference Include="OpenTK" Version="4.8.2" />
+      <PackageReference Include="TinyEXR.NET" Version="0.3.5" />
+    </ItemGroup>
+
+</Project>
