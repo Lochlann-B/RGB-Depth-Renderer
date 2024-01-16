@@ -108,7 +108,6 @@ public class Application(int width, int height, string title) : GameWindow(GameW
 
     protected override void OnLoad()
     {
-        var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
         
         // Runs once when the window opens. Put initialization code here!
         base.OnLoad();
@@ -137,8 +136,13 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         
         //GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
-        var depthMapMesh = DepthTessellator.TessellateDepthArray(depthValues);
-        var contiguousMeshData = depthMapMesh.GetContiguousMeshData();
+        //var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
+        //var depthMapMesh = DepthTessellator.TessellateDepthArray(depthValues);
+        //var contiguousMeshData = depthMapMesh.GetContiguousMeshData();
+
+        var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
+        var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
+        var contiguousMeshData = mesh.GetContiguousMeshData();
         
         GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
         
@@ -166,8 +170,8 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         
         _elementBufferObject = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
-        _indexArray = depthMapMesh.MeshLayout.IndexArray;
-        GL.BufferData(BufferTarget.ElementArrayBuffer, depthMapMesh.MeshLayout.IndexArray.Length * sizeof(uint), depthMapMesh.MeshLayout.IndexArray, BufferUsageHint.StaticDraw);
+        _indexArray = mesh.MeshLayout.IndexArray;
+        GL.BufferData(BufferTarget.ElementArrayBuffer, mesh.MeshLayout.IndexArray.Length * sizeof(uint), mesh.MeshLayout.IndexArray, BufferUsageHint.StaticDraw);
         
         // The VBO that the VAO takes its data from is determined by the VBO currently bound to the ArrayBuffer (i.e. that on line 43)
 
