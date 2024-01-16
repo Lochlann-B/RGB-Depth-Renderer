@@ -61,7 +61,7 @@ public class DepthTessellator
                     foreach (var position in triangle.GetVerticesAsList())
                     {
                         // UV Coordinate is a simple xy plane projection
-                        var texCoord = new Vector2(position[1], position[0]);
+                        var texCoord = new Vector2((fx*position[1]/position[2] + cx)/maxX, ((fy*position[0]/position[2] + cy))/maxY);
                         var vertex = new Vertex(position, normal, texCoord);
                         if (uniqueVertices.Contains(vertex))
                         {

@@ -13,67 +13,6 @@ namespace RGBDReconstruction.Application;
 public class Application(int width, int height, string title) : GameWindow(GameWindowSettings.Default,
     new NativeWindowSettings() { ClientSize = (width, height), Title = title, Flags = ContextFlags.ForwardCompatible })
 {
-    
-    // TODO: Get rid of this tutorial stuff!
-    private readonly float[] _vertices =
-        {
-            // Positions          Normals              Texture coords
-            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-             0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
-             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
-
-            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-             0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-             0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-        };
-    
-    private readonly Vector3[] _cubePositions =
-    {
-        new Vector3(0.0f, 0.0f, 0.0f),
-        new Vector3(2.0f, 5.0f, -15.0f),
-        new Vector3(-1.5f, -2.2f, -2.5f),
-        new Vector3(-3.8f, -2.0f, -12.3f),
-        new Vector3(2.4f, -0.4f, -3.5f),
-        new Vector3(-1.7f, 3.0f, -7.5f),
-        new Vector3(1.3f, -2.0f, -2.5f),
-        new Vector3(1.5f, 2.0f, -2.5f),
-        new Vector3(1.5f, 0.2f, -1.5f),
-        new Vector3(-1.3f, 1.0f, -1.5f)
-    };
 
     private int[] _indexArray;
 
@@ -136,13 +75,13 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         
         //GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
-        //var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
-        //var depthMapMesh = DepthTessellator.TessellateDepthArray(depthValues);
-        //var contiguousMeshData = depthMapMesh.GetContiguousMeshData();
-
-        var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
-        var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
+        var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\locky\\OneDrive\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
+        var mesh = DepthTessellator.TessellateDepthArray(depthValues);
         var contiguousMeshData = mesh.GetContiguousMeshData();
+
+        // var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
+        // var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
+        // var contiguousMeshData = mesh.GetContiguousMeshData();
         
         GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
         
@@ -183,7 +122,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         _model = Matrix4.Identity;
         _model[0, 0] = 1f;
         _model[1, 1] = 1f;
-        _model[2, 2] = -1;
+        _model[2, 2] = -1f;
         _view = Matrix4.CreateTranslation(0.0f, 0.0f, -3.0f);
         _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45.0f), Size.X / (float)Size.Y, 0.1f, 100.0f);
         _lightingShader.SetUniformMatrix4f("model", ref _model);
@@ -210,6 +149,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         //_shader.SetUniformMatrix4f("view", ref _view);
         //_shader.SetUniformMatrix4f("projection", ref _projection);
 
+        //_diffuseMap = new Texture("./resources/container2.png");
         _diffuseMap = new Texture("./resources/container2.png");
         _diffuseMap.Use(TextureUnit.Texture0);
 
