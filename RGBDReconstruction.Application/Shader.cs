@@ -94,6 +94,12 @@ public class Shader
         int location = GL.GetUniformLocation(_handle, name);
         GL.UniformMatrix3(location, true, ref mat3);
     }
+
+    public void SetUniformFloat(string name, float value)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.Uniform1(location, value);
+    }
     
     private bool _disposedValue = false;
 

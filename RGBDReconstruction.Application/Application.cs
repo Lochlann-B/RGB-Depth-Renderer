@@ -6,6 +6,8 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Windowing.Common.Input;
 
+using RGBDReconstruction.Strategies;
+
 namespace RGBDReconstruction.Application;
 
 public class Application(int width, int height, string title) : GameWindow(GameWindowSettings.Default,
@@ -13,56 +15,73 @@ public class Application(int width, int height, string title) : GameWindow(GameW
 {
     
     // TODO: Get rid of this tutorial stuff!
-private readonly float[] _vertices =
+    private readonly float[] _vertices =
         {
-             // Position          Normal
-            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Front face
-             0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            // Positions          Normals              Texture coords
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Back face
-             0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
 
-            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, // Left face
-            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, // Right face
-             0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-             0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+             0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, // Bottom face
-             0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, // Top face
-             0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
         };
+    
+    private readonly Vector3[] _cubePositions =
+    {
+        new Vector3(0.0f, 0.0f, 0.0f),
+        new Vector3(2.0f, 5.0f, -15.0f),
+        new Vector3(-1.5f, -2.2f, -2.5f),
+        new Vector3(-3.8f, -2.0f, -12.3f),
+        new Vector3(2.4f, -0.4f, -3.5f),
+        new Vector3(-1.7f, 3.0f, -7.5f),
+        new Vector3(1.3f, -2.0f, -2.5f),
+        new Vector3(1.5f, 2.0f, -2.5f),
+        new Vector3(1.5f, 0.2f, -1.5f),
+        new Vector3(-1.3f, 1.0f, -1.5f)
+    };
+
+    private int[] _indexArray;
 
     private Vector3 _lightPos;
 
     private int _vertexBufferObject;
     private int _vertexArrayObject;
+    private int _elementBufferObject;
 
     private int _lightVertexArrayObject;
 
@@ -84,8 +103,13 @@ private readonly float[] _vertices =
     private float _sensitivity;
     private bool firstMove = true;
 
+    private Texture _diffuseMap;
+    private Texture _specularMap;
+
     protected override void OnLoad()
     {
+        var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
+        
         // Runs once when the window opens. Put initialization code here!
         base.OnLoad();
         
@@ -110,7 +134,13 @@ private readonly float[] _vertices =
         // Static - likely won't change that much
         // Dynamic - likely to change a lot
         // Stream - Will change every time it is drawn
-        GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
+        
+        //GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
+
+        var depthMapMesh = DepthTessellator.TessellateDepthArray(depthValues);
+        var contiguousMeshData = depthMapMesh.GetContiguousMeshData();
+        
+        GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
         
         // VAO - Vertex Array Object - specifies how the vertex attribute information is stored, formatted, and which buffers the data comes from
         _vertexArrayObject = GL.GenVertexArray();
@@ -124,12 +154,20 @@ private readonly float[] _vertices =
         // The 'index' param below refers to the location in the shader program we are putting data into.
         // That is, the layout (location = 0) in shader.vert
         GL.EnableVertexAttribArray(0);
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
 
         var normalLoc = _lightingShader.GetAttribLocation("aNormal");
         GL.EnableVertexAttribArray(normalLoc);
-        GL.VertexAttribPointer(normalLoc, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+        GL.VertexAttribPointer(normalLoc, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
+
+        var texLoc = _lightingShader.GetAttribLocation("aTexCoords");
+        GL.EnableVertexAttribArray(texLoc);
+        GL.VertexAttribPointer(texLoc, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 6 * sizeof(float));
         
+        _elementBufferObject = GL.GenBuffer();
+        GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
+        _indexArray = depthMapMesh.MeshLayout.IndexArray;
+        GL.BufferData(BufferTarget.ElementArrayBuffer, depthMapMesh.MeshLayout.IndexArray.Length * sizeof(uint), depthMapMesh.MeshLayout.IndexArray, BufferUsageHint.StaticDraw);
         
         // The VBO that the VAO takes its data from is determined by the VBO currently bound to the ArrayBuffer (i.e. that on line 43)
 
@@ -139,6 +177,9 @@ private readonly float[] _vertices =
         _lightingShader.SetUniformVec3("lightColor", ref lightColor);
 
         _model = Matrix4.Identity;
+        _model[0, 0] = 1f;
+        _model[1, 1] = 1f;
+        _model[2, 2] = -1;
         _view = Matrix4.CreateTranslation(0.0f, 0.0f, -3.0f);
         _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45.0f), Size.X / (float)Size.Y, 0.1f, 100.0f);
         _lightingShader.SetUniformMatrix4f("model", ref _model);
@@ -146,25 +187,30 @@ private readonly float[] _vertices =
         _lightingShader.SetUniformMatrix4f("projection", ref _projection);
 
         // shader for the light source
-        _lightVertexArrayObject = GL.GenVertexArray();
-        GL.BindVertexArray(_lightVertexArrayObject);
+        //_lightVertexArrayObject = GL.GenVertexArray();
+       // GL.BindVertexArray(_lightVertexArrayObject);
         
-        _shader = new Shader("./shaders/shader.vert", "./shaders/shader.frag");
-        _shader.Use();
+        //_shader = new Shader("./shaders/shader.vert", "./shaders/shader.frag");
+        //_shader.Use();
 
-        var vertexLocation = _shader.GetAttribLocation("aPosition");
-        GL.EnableVertexAttribArray(vertexLocation);
-        GL.VertexAttribPointer(vertexLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+        //var vertexLocation = _shader.GetAttribLocation("aPosition");
+        //GL.EnableVertexAttribArray(vertexLocation);
+        //GL.VertexAttribPointer(vertexLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
 
-        _lightPos = new Vector3(1.2f, 1.0f, 2.0f);
+        _lightPos = new Vector3(-0.0f, -0.0f, -1.0f);
 
-        _lightModel = Matrix4.Identity;
-        _lightModel *= Matrix4.CreateScale(0.5f);
-        _lightModel *= Matrix4.CreateTranslation(_lightPos);
-        _shader.SetUniformMatrix4f("model", ref _lightModel);
-        _shader.SetUniformMatrix4f("view", ref _view);
-        _shader.SetUniformMatrix4f("projection", ref _projection);
+        //_lightModel = Matrix4.Identity;
+        //_lightModel *= Matrix4.CreateScale(0.5f);
+        //_lightModel *= Matrix4.CreateTranslation(_lightPos);
+        //_shader.SetUniformMatrix4f("model", ref _lightModel);
+        //_shader.SetUniformMatrix4f("view", ref _view);
+        //_shader.SetUniformMatrix4f("projection", ref _projection);
 
+        _diffuseMap = new Texture("./resources/container2.png");
+        _diffuseMap.Use(TextureUnit.Texture0);
+
+        _specularMap = new Texture("./resources/container2_specular.png");
+        _specularMap.Use(TextureUnit.Texture1);
     }
 
     protected override void OnRenderFrame(FrameEventArgs args)
@@ -179,38 +225,68 @@ private readonly float[] _vertices =
         
         
         // Render frame code goes here - run every frame
-        GL.BindVertexArray(_lightVertexArrayObject);
-        _shader.Use();
-        _shader.SetUniformMatrix4f("model", ref _lightModel);
-        _shader.SetUniformMatrix4f("view", ref _view);
-        _shader.SetUniformMatrix4f("projection", ref _projection);
+        // GL.BindVertexArray(_lightVertexArrayObject);
+        // _shader.Use();
+        // _shader.SetUniformMatrix4f("model", ref _lightModel);
+        // _shader.SetUniformMatrix4f("view", ref _view);
+        // _shader.SetUniformMatrix4f("projection", ref _projection);
         
         
         
-        GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        //GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
         
         GL.BindVertexArray(_vertexArrayObject);
+        _diffuseMap.Use(TextureUnit.Texture0);
+        _specularMap.Use(TextureUnit.Texture1);
+        
         _lightingShader.Use();
         _lightingShader.SetUniformMatrix4f("model", ref _model);
         _lightingShader.SetUniformMatrix4f("view", ref _view);
         _lightingShader.SetUniformMatrix4f("projection", ref _projection);
 
-        var vLightPos = new Vector4(_lightPos, 1.0f);
+        var vLightPos = new Vector4(_lightPos, 0.0f);
         vLightPos *= _view;
         var v3LightPos = vLightPos.Xyz;
-        _lightingShader.SetUniformVec3("lightPos", ref v3LightPos);
 
         var normalMat = new Matrix3(Matrix4.Transpose(Matrix4.Invert(Matrix4.Mult(_model, _view))));
         _lightingShader.SetUniformMatrix3f("normal", ref normalMat);
         
-        var objectColor = new Vector3(1.0f, 0.5f, 0.31f);
-        var lightColor = new Vector3(1.0f, 1.0f, 1.0f);
-        _lightingShader.SetUniformVec3("objectColor", ref objectColor);
-        _lightingShader.SetUniformVec3("lightColor", ref lightColor);
+        var objAmbient = new Vector3(1.0f, 0.5f, 0.31f);
+        var objDiffuse = new Vector3(1.0f, 0.5f, 0.31f);
+        var objSpecular = new Vector3(0.5f, 0.5f, 0.5f);
+        var objShininess = 32;
+
+        var lightAmbient = new Vector3(0.2f, 0.2f, 0.2f);
+        var lightDiffuse = new Vector3(0.5f, 0.5f, 0.5f);
+        var lightSpecular = new Vector3(1.0f, 1.0f, 1.0f);
+        _lightingShader.SetUniformVec3("material.specular", ref objSpecular);
+        _lightingShader.SetUniformFloat("material.shininess", objShininess);
         
+        _lightingShader.SetUniformVec3("light.ambient", ref lightAmbient);
+        _lightingShader.SetUniformVec3("light.diffuse", ref lightDiffuse);
+        _lightingShader.SetUniformVec3("light.specular", ref lightSpecular);
+        _lightingShader.SetUniformVec3("light.direction", ref v3LightPos);
+        
+        
+        _lightingShader.SetUniformInt("material.diffuse", 0);
+        _lightingShader.SetUniformInt("material.specular", 1);
                 
-                
-        GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
+       // GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        GL.DrawElements(PrimitiveType.Triangles, _indexArray.Length, DrawElementsType.UnsignedInt, 0);
+        
+        // for (int i = 0; i < _cubePositions.Length; i++)
+        // {
+        //     Matrix4 model = Matrix4.Identity;
+        //     model *= Matrix4.CreateTranslation(_cubePositions[i]);
+        //     float angle = 20.0f * i;
+        //     model *= Matrix4.CreateFromAxisAngle(new Vector3(1.0f, 0.3f, 0.5f), angle);
+        //     _lightingShader.SetUniformMatrix4f("model", ref model);
+        //     
+        //     var normalMatc = new Matrix3(Matrix4.Transpose(Matrix4.Invert(Matrix4.Mult(model, _view))));
+        //     _lightingShader.SetUniformMatrix3f("normal", ref normalMatc);
+        //
+        //     GL.DrawArrays(PrimitiveType.Triangles, 0, 36);                
+        // }
         
         Context.SwapBuffers();
         
