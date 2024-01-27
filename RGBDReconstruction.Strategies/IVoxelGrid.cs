@@ -1,4 +1,7 @@
-﻿namespace RGBDReconstruction.Strategies;
+﻿using OpenTK.Mathematics;
+using RGBDReconstruction.Application;
+
+namespace RGBDReconstruction.Strategies;
 
 public interface IVoxelGrid
 {
@@ -9,4 +12,6 @@ public interface IVoxelGrid
     public float XStart { get; }
     public float YStart { get; }
     public float ZStart { get; }
+
+    public void UpdateWithTriangularMesh(Mesh triangleMeshInWorldCoords, Matrix4 cameraPose);
 }

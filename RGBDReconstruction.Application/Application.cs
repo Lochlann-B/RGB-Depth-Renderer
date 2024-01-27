@@ -76,12 +76,17 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         //GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
         var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\locky\\OneDrive\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
-        var mesh = DepthTessellator.TessellateDepthArray(depthValues);
-        var contiguousMeshData = mesh.GetContiguousMeshData();
+        var bmesh = DepthTessellator.TessellateDepthArray(depthValues);
 
-        // var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
-        // var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
-        // var contiguousMeshData = mesh.GetContiguousMeshData();
+        var voxelGrid = new VoxelGrid(50, -5.0f, -5.0f, 0f, 0.2f);
+        voxelGrid.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
+        
+        
+        //var contiguousMeshData = mesh.GetContiguousMeshData();
+
+        //var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
+        var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
+        var contiguousMeshData = mesh.GetContiguousMeshData();
         
         GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
         

@@ -44,7 +44,7 @@ public class MarchingCubes
                     var cubeVertexConfig = GetCubeVertexConfiguration(currentVoxel, voxelGrid);
 
                     var localTrianglesEdgeIdxs = GetTriangleEdges(cubeVertexConfig);
-
+                    
                     foreach (var localTriangleEdgeIdxs in localTrianglesEdgeIdxs)
                     {
                         var worldTriangleVertexPositions =

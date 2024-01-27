@@ -19,11 +19,11 @@ public class Mesh(MeshLayout meshLayout, List<float> vertexPositions, List<float
         
         int stride = MeshLayout.Stride;
 
-        float[] contiguousMeshData = new float[vertexNormals.Count + vertexPositions.Count + texCoords.Count];
+        float[] contiguousMeshData = new float[VertexNormals.Count + VertexPositions.Count + texCoords.Count];
 
         int idx = 1;
         int currentUpperLimitIndex = numPosComponents;
-        vertexPositions.ForEach(pos =>
+        VertexPositions.ForEach(pos =>
         {
             contiguousMeshData[idx-1] = pos;
             if ((idx ) % (currentUpperLimitIndex) == 0)
@@ -38,7 +38,7 @@ public class Mesh(MeshLayout meshLayout, List<float> vertexPositions, List<float
         });
         idx = 1 + numPosComponents;
         currentUpperLimitIndex = numPosComponents + numNormComponents;
-        vertexNormals.ForEach(norm =>
+        VertexNormals.ForEach(norm =>
         {
             contiguousMeshData[idx-1] = norm;
             if ((idx ) % (currentUpperLimitIndex) == 0)
@@ -72,4 +72,6 @@ public class Mesh(MeshLayout meshLayout, List<float> vertexPositions, List<float
     }
 
     public MeshLayout MeshLayout { get; } = meshLayout;
+    public List<float> VertexPositions { get; } = vertexPositions;
+    public List<float> VertexNormals { get; } = vertexNormals;
 }
