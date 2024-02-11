@@ -37,6 +37,7 @@ public class MarchingCubes
         
         
         var currentIndex = 0;
+        var blep = 2;
 
         foreach (var currentVoxel in GetSeenVoxels(voxelGrid)) 
         {
