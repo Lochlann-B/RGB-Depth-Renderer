@@ -4,6 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <LangVersion>preview</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -13,6 +14,12 @@
       <PackageReference Include="OpenCV" Version="2.4.11" />
       <PackageReference Include="OpenTK" Version="4.8.2" />
       <PackageReference Include="TinyEXR.NET" Version="0.3.5" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\SimpleScene\SimpleScene\_SimpleScene.csproj" />
+      <ProjectReference Include="..\Geometry\Geometry.csproj" />
+      <ProjectReference Include="..\OpenTKDowngradeHelper\OpenTKDowngradeHelper.csproj" />
     </ItemGroup>
 
 </Project>

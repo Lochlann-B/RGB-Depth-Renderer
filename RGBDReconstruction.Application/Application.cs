@@ -76,17 +76,38 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         //GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
         var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\locky\\OneDrive\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
+        Console.WriteLine("Tessellating depth map start...");
+        var watch = System.Diagnostics.Stopwatch.StartNew();
         var bmesh = DepthTessellator.TessellateDepthArray(depthValues);
-
-        var voxelGrid = new VoxelGrid(50, -5.0f, -5.0f, 0f, 0.2f);
-        voxelGrid.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
+        watch.Stop();
+        Console.WriteLine("Tessellation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        watch.Reset();
         
+        Console.WriteLine("Instantiating voxel grid start...");
+        watch.Start();
+        var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
+        watch.Stop();
+        Console.WriteLine("Voxel grid instantiation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        watch.Reset();
+        
+        Console.WriteLine("Updating voxel grid with one mesh start...");
+        watch.Start();
+        voxelGrid.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
+        watch.Stop();
+        Console.WriteLine("Voxel grid updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        watch.Reset();
         
         //var contiguousMeshData = mesh.GetContiguousMeshData();
 
         //var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
+        
+        Console.WriteLine("Marching cubes start...");
+        watch.Start();
         var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
-        var contiguousMeshData = mesh.GetContiguousMeshData();
+        watch.Stop();
+        Console.WriteLine("Marching cubes finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        watch.Reset();
+         var contiguousMeshData = mesh.GetContiguousMeshData();
         
         GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
         
@@ -155,11 +176,11 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         //_shader.SetUniformMatrix4f("projection", ref _projection);
 
         //_diffuseMap = new Texture("./resources/container2.png");
-        _diffuseMap = new Texture("./resources/container2.png");
+        _diffuseMap = new Texture("./resources/frame_0001_cam_001.png");
         _diffuseMap.Use(TextureUnit.Texture0);
 
-        _specularMap = new Texture("./resources/container2_specular.png");
-        _specularMap.Use(TextureUnit.Texture1);
+        //_specularMap = new Texture("./resources/container2_specular.png");
+        //_specularMap.Use(TextureUnit.Texture1);
     }
 
     protected override void OnRenderFrame(FrameEventArgs args)
@@ -186,7 +207,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         
         GL.BindVertexArray(_vertexArrayObject);
         _diffuseMap.Use(TextureUnit.Texture0);
-        _specularMap.Use(TextureUnit.Texture1);
+        //_specularMap.Use(TextureUnit.Texture1);
         
         _lightingShader.Use();
         _lightingShader.SetUniformMatrix4f("model", ref _model);

@@ -1,6 +1,7 @@
 ﻿using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using RGBDReconstruction.Application;
+using Geometry;
 
 namespace RGBDReconstruction.Strategies;
 
@@ -28,8 +29,8 @@ public class DepthTessellator
 
         var currentIndex = 0;
 
-        int xres = 8;
-        int yres = 8;
+        int xres = 4;
+        int yres = 4;
 
         var maxY = depthMap.GetLength(0)-yres;
         var maxX = depthMap.GetLength(1)-xres;
@@ -61,7 +62,7 @@ public class DepthTessellator
 
                 foreach (Triangle triangle in triangles)
                 {
-                    if (triangle.HasLengthLongerThanThreshold(1.0f))
+                    if (triangle.HasLengthLongerThanThreshold(.1f))
                     {
                         continue;
                     }
@@ -69,7 +70,7 @@ public class DepthTessellator
                     foreach (var position in triangle.GetVerticesAsList())
                     {
                         // UV Coordinate is a simple xy plane projection
-                        var texCoord = new Vector2((fx*position[1]/position[2] + cx)/maxX, ((fy*position[0]/position[2] + cy))/maxY);
+                        var texCoord = new Vector2((fy*position[0]/position[2] + cy)/maxY,(fx*position[1]/position[2] + cx)/maxX);
                         var vertex = new Vertex(position, normal, texCoord);
                         if (uniqueVertices.Contains(vertex))
                         {
@@ -104,7 +105,7 @@ public class DepthTessellator
         return new Mesh(meshLayout, positions, normals, texCoords);
     }
 
-    private static float GetFocal(float focalLength, float sensorSize, float imgSize)
+    public static float GetFocal(float focalLength, float sensorSize, float imgSize)
     {
         return focalLength * (imgSize / sensorSize);
     }

@@ -1,15 +1,19 @@
 ﻿using System.Numerics;
+using Geometry;
 using OpenTK.Mathematics;
 using RGBDReconstruction.Application;
 using Vector3 = OpenTK.Mathematics.Vector3;
 using ILGPU;
+using ILGPU.IR;
 using ILGPU.Runtime;
+using SimpleScene.Util.ssBVH;
 
 namespace RGBDReconstruction.Strategies;
 
 public class VoxelGrid(int size, float xStart, float yStart, float zStart, float resolution) : IVoxelGrid
 {
-    private float[] _voxelValues = new float[size * size * size];
+    protected float[] _voxelValues = new float[size * size * size];
+    protected List<Vector3> _seenVoxels = new();
 
     public void UpdateWithTriangularMesh(Mesh triangularMeshInWorldCoords, Matrix4 cameraPose)
     {
@@ -26,6 +30,8 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
         //    var vertexPos = new Vector3(vertices[i], vertices[i + 1], vertices[i + 2]);
         //    AddNeighbouringVoxels(closeVoxels, vertexPos);
         // }
+        
+        // TODO: Make parallel?
         GetVoxelsNearMesh(closeVoxels, mesh);
         Console.Write("All neighbouring voxels found! Length: {0}\n", closeVoxels.Count);
 
@@ -36,6 +42,8 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
 
         // 1: For each voxel, construct a ray from cameraPose as source, to voxel as direction.
         var source = cameraPose.ExtractTranslation();
+        
+        
 
         var meshIntersectionTimes = new List<float>();
         Parallel.ForEach(closeVoxels, voxel =>
@@ -79,7 +87,7 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
         Console.WriteLine("Times for ray intersection with mesh: \n Least: {0}\n Greatest: {1}\n Mean average: {2}", meshIntersectionTimes.Min(), meshIntersectionTimes.Max(), meshIntersectionTimes.Average());
     }
 
-    private void AddNeighbouringVoxels(HashSet<Vector3> voxels, Vector3 coord)
+    protected void AddNeighbouringVoxels(HashSet<Vector3> voxels, Vector3 coord)
     {
         var startVox = new Vector3(
             coord[0].FloorToInterval(Resolution),
@@ -99,27 +107,14 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
         voxels.Add(new Vector3(xInc, yInc, v[2]));
         voxels.Add(new Vector3(xInc, yInc, zInc));
         voxels.Add(new Vector3(v[0], yInc, zInc));
+        
     }
 
-    private void GetVoxelsNearMesh(HashSet<Vector3> voxels, Mesh mesh)
+    protected void GetVoxelsNearMesh(HashSet<Vector3> voxels, Mesh mesh)
     {
-        var indices = mesh.MeshLayout.IndexArray;
-        for (int i = 0; i < indices.Length; i += 3)
+        var triangles = mesh.GetMeshTriangles();
+        foreach (var triangle in triangles)
         {
-            // Make triangle using positions and indices
-            var triangleVertices = new List<Vector3>();
-
-            for (int j = i; j < i + 3; j++)
-            {
-                triangleVertices.Add(new Vector3(
-                    mesh.VertexPositions[3 * indices[j]],
-                    mesh.VertexPositions[3 * indices[j] + 1],
-                    mesh.VertexPositions[3 * indices[j] + 2]
-                ));
-            }
-
-            var triangle = new Triangle(triangleVertices[0], triangleVertices[1], triangleVertices[2]);
-            
             // Get voxels near the triangle:
             // Loop through the bounding box of the triangle given by its smallest and largest x y z coords of
             // all 3 vertices.
@@ -162,13 +157,15 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
         }
     }
 
-public float this[float x, float y, float z]
+    public float this[float x, float y, float z]
     {
         get => _voxelValues[Index(x, y, z)];
         set => _voxelValues[Index(x, y, z)] = value;
     }
 
-    private int Index(float x, float y, float z)
+    public List<Vector3> SeenVoxels => _seenVoxels;
+
+    protected int Index(float x, float y, float z)
     {
         var nX = (x - XStart).RoundToInterval(Resolution);
         var nY = (y - YStart).RoundToInterval(Resolution);

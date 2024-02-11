@@ -4,6 +4,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RGBDReconstruction.Applicat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RGBDReconstruction.Strategies", "RGBDReconstruction.Strategies\RGBDReconstruction.Strategies.csproj", "{0DF3F1B4-DE05-4012-B7E6-7A1AFA97383C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_SimpleScene", "..\SimpleScene\SimpleScene\_SimpleScene.csproj", "{4A7A056C-CB90-4F29-95DE-EAC471A6CBD7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTKDowngradeHelper", "OpenTKDowngradeHelper\OpenTKDowngradeHelper.csproj", "{9FA8DBBC-EBAA-4BF5-A86C-A86BC700A6B3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Geometry", "Geometry\Geometry.csproj", "{E6BC00C7-9D4F-481F-9909-E10A084389EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +24,17 @@ Global
 		{0DF3F1B4-DE05-4012-B7E6-7A1AFA97383C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0DF3F1B4-DE05-4012-B7E6-7A1AFA97383C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0DF3F1B4-DE05-4012-B7E6-7A1AFA97383C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A7A056C-CB90-4F29-95DE-EAC471A6CBD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A7A056C-CB90-4F29-95DE-EAC471A6CBD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A7A056C-CB90-4F29-95DE-EAC471A6CBD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A7A056C-CB90-4F29-95DE-EAC471A6CBD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FA8DBBC-EBAA-4BF5-A86C-A86BC700A6B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FA8DBBC-EBAA-4BF5-A86C-A86BC700A6B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FA8DBBC-EBAA-4BF5-A86C-A86BC700A6B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FA8DBBC-EBAA-4BF5-A86C-A86BC700A6B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6BC00C7-9D4F-481F-9909-E10A084389EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6BC00C7-9D4F-481F-9909-E10A084389EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6BC00C7-9D4F-481F-9909-E10A084389EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6BC00C7-9D4F-481F-9909-E10A084389EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

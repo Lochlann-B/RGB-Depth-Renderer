@@ -1,5 +1,7 @@
-﻿using OpenTK.Mathematics;
+﻿using Geometry;
+using OpenTK.Mathematics;
 using RGBDReconstruction.Application;
+using RGBDReconstruction.Strategies;
 
 namespace RGBDReconstruction.Strategies;
 
@@ -7,7 +9,6 @@ public class MarchingCubes
 {
     public static Mesh GenerateMeshFromVoxelGrid(IVoxelGrid voxelGrid)
     {
-        var start = new float[] { voxelGrid.XStart, voxelGrid.YStart, voxelGrid.ZStart };
         
         var uniqueVertices = new HashSet<Vertex>();
         var vertexIndex = new Dictionary<Vertex, int>();
@@ -26,69 +27,67 @@ public class MarchingCubes
         vertexAttribDictionary["normals"] = normVertexAttribute;
         vertexAttribDictionary["textureCoordinates"] = texVertexAttribute;
         
+        var maxY = 1080;
+        var maxX = 1920;
+
+        int cx = (maxX + 1) / 2;
+        int cy = (maxY + 1) / 2;
+        float fx = DepthTessellator.GetFocal(50f, 36f, 1920f);
+        float fy = DepthTessellator.GetFocal(28.125f, 36*(9/16f), 1080f);
+        
+        
         var currentIndex = 0;
 
-        for (int i = 0; i < voxelGrid.Size-1; i++)
+        foreach (var currentVoxel in GetSeenVoxels(voxelGrid)) 
         {
-            for (int j = 0; j < voxelGrid.Size-1; j++)
+
+            var cubeVertexConfig = GetCubeVertexConfiguration(currentVoxel, voxelGrid);
+
+            var localTrianglesEdgeIdxs = GetTriangleEdges(cubeVertexConfig);
+            
+            foreach (var localTriangleEdgeIdxs in localTrianglesEdgeIdxs)
             {
-                for (int k = 0; k < voxelGrid.Size-1; k++)
+                var worldTriangleVertexPositions =
+                    LinearInterpolateTriangleVertices(currentVoxel, voxelGrid, localTriangleEdgeIdxs);
+
+                var cubeNormals = GetVertexNormals(currentVoxel, voxelGrid);
+                var worldTriangleVertexNormals = GetInterpolatedTriangleNormals(cubeNormals, voxelGrid,
+                    localTriangleEdgeIdxs, currentVoxel);
+
+                for (int l = 0; l < worldTriangleVertexPositions.Length; l++)
                 {
-                    var currentVoxel = new float[]
+                    var pos = worldTriangleVertexPositions;
+                    var norm = worldTriangleVertexNormals;
+                    var position = new Vector3(pos[l][0], pos[l][1], pos[l][2]);
+                    var normal = new Vector3(norm[l][0], norm[l][1], norm[l][2]);
+
+                    // UV Coordinate is a simple xy plane projection
+                    var texCoord = new Vector2((fy*position[0]/position[2] + cy)/maxY,(fx*position[1]/position[2] + cx)/maxX);
+                    var vertex = new Vertex(position, normal, texCoord);
+                    if (uniqueVertices.Contains(vertex))
                     {
-                        start[0] + k*voxelGrid.Resolution,
-                        start[1] + j*voxelGrid.Resolution,
-                        start[2] + i*voxelGrid.Resolution
-                    };
-
-                    var cubeVertexConfig = GetCubeVertexConfiguration(currentVoxel, voxelGrid);
-
-                    var localTrianglesEdgeIdxs = GetTriangleEdges(cubeVertexConfig);
-                    
-                    foreach (var localTriangleEdgeIdxs in localTrianglesEdgeIdxs)
+                        vertexIndices.Add(vertexIndex[vertex]);
+                    }
+                    else
                     {
-                        var worldTriangleVertexPositions =
-                            LinearInterpolateTriangleVertices(currentVoxel, voxelGrid, localTriangleEdgeIdxs);
+                        vertexIndex[vertex] = currentIndex;
+                        uniqueVertices.Add(vertex);
+                        vertexIndices.Add(vertexIndex[vertex]);
+                        currentIndex++;
 
-                        var cubeNormals = GetVertexNormals(currentVoxel, voxelGrid);
-                        var worldTriangleVertexNormals = GetInterpolatedTriangleNormals(cubeNormals, voxelGrid,
-                            localTriangleEdgeIdxs, currentVoxel);
+                        positions.Add(position[0]);
+                        positions.Add(position[1]);
+                        positions.Add(position[2]);
 
-                        for (int l = 0; l < worldTriangleVertexPositions.Length; l++)
-                        {
-                            var pos = worldTriangleVertexPositions;
-                            var norm = worldTriangleVertexNormals;
-                            var position = new Vector3(pos[l][0], pos[l][1], pos[l][2]);
-                            var normal = new Vector3(norm[l][0], norm[l][1], norm[l][2]);
+                        normals.Add(normal[0]);
+                        normals.Add(normal[1]);
+                        normals.Add(normal[2]);
 
-                            // UV Coordinate is a simple xy plane projection
-                            var texCoord = new Vector2(position[1], position[0]);
-                            var vertex = new Vertex(position, normal, texCoord);
-                            if (uniqueVertices.Contains(vertex))
-                            {
-                                vertexIndices.Add(vertexIndex[vertex]);
-                            }
-                            else
-                            {
-                                vertexIndex[vertex] = currentIndex;
-                                uniqueVertices.Add(vertex);
-                                vertexIndices.Add(vertexIndex[vertex]);
-                                currentIndex++;
-
-                                positions.Add(position[0]);
-                                positions.Add(position[1]);
-                                positions.Add(position[2]);
-
-                                normals.Add(normal[0]);
-                                normals.Add(normal[1]);
-                                normals.Add(normal[2]);
-
-                                texCoords.Add(texCoord[0]);
-                                texCoords.Add(texCoord[1]);
-                            }
-                        }
+                        texCoords.Add(texCoord[0]);
+                        texCoords.Add(texCoord[1]);
                     }
                 }
+                
             }
         }
         
@@ -97,7 +96,7 @@ public class MarchingCubes
         return new Mesh(meshLayout, positions, normals, texCoords);
     }
 
-    private static byte GetCubeVertexConfiguration(float[] currentVertexInWorldSpace, IVoxelGrid voxelGrid)
+    private static byte GetCubeVertexConfiguration(Vector3 currentVertexInWorldSpace, IVoxelGrid voxelGrid)
     {
         byte config = 0b00000000;
         var localCubeVertexCoords = VoxelCube.Vertices;
@@ -132,7 +131,7 @@ public class MarchingCubes
     }
 
     // These guys are done per-triangle
-    private static float[][] LinearInterpolateTriangleVertices(float[] currentVertexInWorldSpace, IVoxelGrid voxelGrid, int[] edgeIdxs)
+    private static float[][] LinearInterpolateTriangleVertices(Vector3 currentVertexInWorldSpace, IVoxelGrid voxelGrid, int[] edgeIdxs)
     {
         var interpolatedVertexValues = new float[edgeIdxs.Length][];
         var idx = 0;
@@ -177,7 +176,7 @@ public class MarchingCubes
         return interpolatedVertexValues;
     }
 
-    private static float[][] GetVertexNormals(float[] currentVertexInWorldSpace, IVoxelGrid voxelGrid)
+    private static float[][] GetVertexNormals(Vector3 currentVertexInWorldSpace, IVoxelGrid voxelGrid)
     {
         var cV = currentVertexInWorldSpace;
         var res = voxelGrid.Resolution;
@@ -206,7 +205,7 @@ public class MarchingCubes
     }
 
     private static float[][] GetInterpolatedTriangleNormals(float[][] cubeVertexNormals, IVoxelGrid voxelGrid,
-        int[] localTriangleEdges, float[] currentVertexInWorldSpace)
+        int[] localTriangleEdges, Vector3 currentVertexInWorldSpace)
     {
         var interpolatedNormals = new float[localTriangleEdges.Length][];
         var curVtx = currentVertexInWorldSpace;
@@ -235,5 +234,30 @@ public class MarchingCubes
         }
 
         return interpolatedNormals;
+    }
+
+    protected static List<Vector3> GetAllVoxels(IVoxelGrid voxelGrid)
+    {
+        var start = new float[] { voxelGrid.XStart, voxelGrid.YStart, voxelGrid.ZStart };
+        var voxelList = new List<Vector3>();
+        for (int i = 0; i < voxelGrid.Size - 1; i++)
+        {
+            for (int j = 0; j < voxelGrid.Size - 1; j++)
+            {
+                for (int k = 0; k < voxelGrid.Size - 1; k++)
+                {
+                    voxelList.Add(new Vector3(start[0] + k * voxelGrid.Resolution,
+                        start[1] + j * voxelGrid.Resolution,
+                        start[2] + i * voxelGrid.Resolution));
+                }
+            }
+        }
+
+        return voxelList;
+    }
+
+    protected static List<Vector3> GetSeenVoxels(IVoxelGrid voxelGrid)
+    {
+        return voxelGrid.SeenVoxels;
     }
 }
