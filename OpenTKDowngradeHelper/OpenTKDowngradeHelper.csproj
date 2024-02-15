@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <WarningsAsErrors>;SYSLIB0011</WarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="OpenTK" Version="1.1.2225" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\SimpleScene\SimpleScene\_SimpleScene.csproj" />
+      <ProjectReference Include="..\Geometry\Geometry.csproj" />
+    </ItemGroup>
+
+</Project>
