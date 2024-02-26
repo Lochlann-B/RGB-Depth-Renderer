@@ -22,4 +22,10 @@
       <ProjectReference Include="..\OpenTKDowngradeHelper\OpenTKDowngradeHelper.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="ComputeShaders\TessellationComputeShader.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

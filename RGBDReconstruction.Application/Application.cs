@@ -53,7 +53,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         
         GL.Enable(EnableCap.DepthTest);
 
-        GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        GL.ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
         _camera = new Camera();
         _sensitivity = 0.1f;
@@ -83,30 +83,30 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         Console.WriteLine("Tessellation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
         watch.Reset();
         
-        Console.WriteLine("Instantiating voxel grid start...");
-        watch.Start();
-        var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
-        watch.Stop();
-        Console.WriteLine("Voxel grid instantiation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
-        watch.Reset();
+         Console.WriteLine("Instantiating voxel grid start...");
+         watch.Start();
+         var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
+         watch.Stop();
+         Console.WriteLine("Voxel grid instantiation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+         watch.Reset();
         
-        Console.WriteLine("Updating voxel grid with one mesh start...");
-        watch.Start();
-        voxelGrid.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
-        watch.Stop();
-        Console.WriteLine("Voxel grid updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
-        watch.Reset();
+         Console.WriteLine("Updating voxel grid with one mesh start...");
+         watch.Start();
+         voxelGrid.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
+         watch.Stop();
+         Console.WriteLine("Voxel grid updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+         watch.Reset();
         
-        //var contiguousMeshData = mesh.GetContiguousMeshData();
+       // var contiguousMeshData = mesh.GetContiguousMeshData();
 
         //var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
         
-        Console.WriteLine("Marching cubes start...");
-        watch.Start();
-        var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
-        watch.Stop();
-        Console.WriteLine("Marching cubes finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
-        watch.Reset();
+         Console.WriteLine("Marching cubes start...");
+         watch.Start();
+         var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
+         watch.Stop();
+         Console.WriteLine("Marching cubes finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+         watch.Reset();
          var contiguousMeshData = mesh.GetContiguousMeshData();
         
         GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
