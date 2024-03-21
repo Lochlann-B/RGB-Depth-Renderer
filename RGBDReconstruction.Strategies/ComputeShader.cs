@@ -65,6 +65,24 @@ public class ComputeShader
         GL.Uniform3(location, values);
     }
 
+    public void SetUniformUIntArray(string name, ref uint[] values)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.Uniform1(location, values.Length, values);
+    }
+    
+    public void SetUniformIntArray(string name, ref int[] values)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.Uniform1(location, values.Length, values);
+    }
+    
+    public void SetUniformFloatArray(string name, ref float[] values)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.Uniform1(location, values.Length, values);
+    }
+
     public void SetUniformMatrix4f(string name, ref Matrix4 mat4)
     {
         int location = GL.GetUniformLocation(_handle, name);

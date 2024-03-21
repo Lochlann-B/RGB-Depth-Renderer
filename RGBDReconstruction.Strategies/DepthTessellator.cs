@@ -226,6 +226,9 @@ public class DepthTessellator
         GL.BindImageTexture(0, depthBufferTexture, 0, false, 0, TextureAccess.ReadOnly, SizedInternalFormat.R32f);
         computeShader.SetUniformInt("width", depthMap.GetLength(1));
         computeShader.SetUniformInt("height", depthMap.GetLength(0));
+
+        computeShader.SetUniformInt("xres", xres);
+        computeShader.SetUniformInt("yres", yres);
         
         // Generate buffer handles
         int indexBufferHandle = GL.GenBuffer();
@@ -262,6 +265,7 @@ public class DepthTessellator
         Console.WriteLine(watch.ElapsedMilliseconds);
 
         watch.Reset();
+        watch.Start();
         GL.DispatchCompute(depthMap.GetLength(0), depthMap.GetLength(1), 1);
         watch.Stop();
         Console.WriteLine(watch.ElapsedMilliseconds);

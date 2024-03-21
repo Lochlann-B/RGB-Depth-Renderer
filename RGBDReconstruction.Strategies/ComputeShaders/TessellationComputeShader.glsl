@@ -23,6 +23,9 @@ layout (std430, binding = 3) buffer NormalBuffer {
 uniform int width;
 uniform int height;
 
+uniform int xres;
+uniform int yres;
+
 float getFocal(float focalLength, float sensorSize, float imgSize) {
     return focalLength * (imgSize / sensorSize);
 }
@@ -71,8 +74,6 @@ void writeTriangleData(vec3 v1, vec3 v2, vec3 v3, ivec3 nv1, ivec3 nv2, ivec3 nv
 
 void main()
 {
-    int xres = 1;
-    int yres = 1;
     
     ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);
     int y = storePos.x;
