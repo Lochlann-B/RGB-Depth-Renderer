@@ -53,6 +53,7 @@ void writeTriangleData(vec3 v1, vec3 v2, vec3 v3, ivec3 nv1, ivec3 nv2, ivec3 nv
 
     for(int i = 0; i < 3; i++) {
         vec3 pos = tri1[i];
+        
         // UV Coordinate is a simple xy plane projection
         vec2 texCoord = vec2((fy*pos.x/pos.z + cy)/height, (fx*pos.y/pos.z + cx)/width);
 

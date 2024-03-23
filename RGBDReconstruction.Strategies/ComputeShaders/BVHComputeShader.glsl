@@ -19,44 +19,45 @@ layout (std430, binding = 1) buffer BVHLeafNodes {
     BVHNode BVHLeaves[];
 };
 
-uniform int[] sortedMortonCodes[];
+layout (std430, binding = 2) buffer sortedMortonCodesBuf {
+    uint sortedMortonCodes[];
+};
 
 uniform int numObjs;
 
-int delta(int i, int j, int[] k) {
+int delta(int i, int j) {
     // Return longest common prefixes of binary digits between 32-bit integers i and j
-    return 31 - int(floor(log2(k[i] ^ k[j])));
+    return 31 - int(floor(log2(sortedMortonCodes[i] ^ sortedMortonCodes[j])));
 }
 
-vec2i determineRange(int[] sortedMortonCodes, int numObjs, int idx) {
-    int[] k = sortedMortonCodes;
-    int i = idx;
+ivec2 determineRange(uint idx) {
+    int i = int(idx);
     
     // Determine direction of range (+1 for right box, -1 for left box)
-    int d = sign(delta(i, i+1, k) - delta(i, i-1, k));
+    int d = sign(delta(i, i+1) - delta(i, i-1));
     
     // Compute upper bound for length of range
-    int delMin = delta(i, i-d, k);
+    int delMin = delta(i, i-d);
     int lMax = 2;
     
-    while (delta(i, i + lMax*d, k) > delMin) {
+    while (delta(i, i + lMax*d) > delMin) {
         lMax *= 2;
     }
 
     // Find the other end using binary search
     int l = 0;
     for (int t = lMax/2; t >= 1; t /= 2) {
-        if (delta(i, i + (l + t)*d, k) > delMin) {
+        if (delta(i, i + (l + t)*d) > delMin) {
             l += t;
         }
     }
     int j = i + l*d;
 
     // Find split position using binary search
-    int delNode = delta(i, j, k);
+    int delNode = delta(i, j);
     int s = 0;
     for (int t = int(ceil(l/2)); t >= 1; t = int(ceil(t/2))) {
-        if (delta(i, i + (s+t)*d, k) > delNode) {
+        if (delta(i, i + (s+t)*d) > delNode) {
             s += t;
         }
     }
@@ -73,13 +74,13 @@ vec2i determineRange(int[] sortedMortonCodes, int numObjs, int idx) {
         // the internal nodes array by having the index be greater than n.
         // Internal nodes array length = n-1, leaf (object) array = n for reference.
         
-        left = n + gamma;
+        left = numObjs + gamma;
     } else {
         left = gamma;
     }
     if (max(i,j) == gamma + 1) {
         // Same but for the upper bound
-        right = n + gamma + 1;
+        right = numObjs + gamma + 1;
     } else {
         right = gamma + 1;
     }
@@ -89,10 +90,10 @@ vec2i determineRange(int[] sortedMortonCodes, int numObjs, int idx) {
     node.rightIdx = right;
     BVHInternals[idx] = node;
     
-    return vec2i(left, right);
+    return ivec2(left, right);
 }
 
-int findSplit(int[] sortedMortonCodes, int first, int last) {
+int findSplit(int first, int last) {
     uint firstCode = sortedMortonCodes[first];
     uint lastCode = sortedMortonCodes[last];
     
@@ -126,34 +127,37 @@ int findSplit(int[] sortedMortonCodes, int first, int last) {
     return split;
 }
 
-void addTriangleToBVH(vec3 v1, vec3 v2, vec3 v3) {
-    
-}
-
 void main() {
     uint idx = gl_GlobalInvocationID.x;
-    vec2i range = determineRange(sortedMortonCodes, numObjs, idx);
+    ivec2 range = determineRange(idx);
     int first = range.x;
     int last = range.y;
     
-    int split = findSplit(sortedMortonCodes, first, last);
+    int split = findSplit(first, last);
+    
+    int childLeftIdx;
+    int childRightIdx;
     
     BVHNode childLeft;
     if (split == first) {
         childLeft = BVHLeaves[split];
+        childLeftIdx = numObjs + split;
     } else {
         childLeft = BVHInternals[split];
+        childLeftIdx = split;
     }
     
     BVHNode childRight;
     if (split + 1 == last) {
         childRight = BVHLeaves[split + 1];
+        childRightIdx = numObjs + split + 1;
     } else {
         childRight = BVHInternals[split + 1];
+        childRightIdx = split + 1;
     }
     
-    BVHInternals[idx].leftIdx = childLeft;
-    BVHInternals[idx].rightIdx = childRight;
+    BVHInternals[idx].leftIdx = childLeftIdx;
+    BVHInternals[idx].rightIdx = childRightIdx;
     childLeft.parentIdx = idx;
     childRight.parentIdx = idx;
     

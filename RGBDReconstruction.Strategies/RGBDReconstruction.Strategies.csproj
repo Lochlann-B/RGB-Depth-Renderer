@@ -11,6 +11,7 @@
       <PackageReference Include="Emgu.CV" Version="4.8.1.5350" />
       <PackageReference Include="Emgu.CV.runtime.windows" Version="4.8.1.5350" />
       <PackageReference Include="ILGPU" Version="1.5.1" />
+      <PackageReference Include="ILGPU.Algorithms" Version="1.5.1" />
       <PackageReference Include="OpenCV" Version="2.4.11" />
       <PackageReference Include="OpenTK" Version="4.8.2" />
       <PackageReference Include="TinyEXR.NET" Version="0.3.5" />
@@ -26,6 +27,21 @@
       <None Update="ComputeShaders\TessellationComputeShader.glsl">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="ComputeShaders\BVHComputeShader.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="ComputeShaders\MortonCodeComputeShader.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="ComputeShaders\MeshRangesComputeShader.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="BVH\BVHConstructor.cs">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Compile>
     </ItemGroup>
 
 </Project>

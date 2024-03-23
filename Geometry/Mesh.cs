@@ -5,6 +5,13 @@ namespace Geometry;
 public class Mesh(MeshLayout meshLayout, List<float> vertexPositions, List<float> vertexNormals, List<float> texCoords)
 {
 
+    public Mesh(MeshLayout meshLayout, List<float> vertexPositions, List<float> vertexNormals, List<float> texCoords, List<float> xRanges, List<float> yRanges, List<float> zRanges) : this(meshLayout, vertexPositions, vertexNormals, texCoords)
+    {
+        this.xRanges = xRanges;
+        this.yRanges = yRanges;
+        this.zRanges = zRanges;
+    }
+
     private List<Triangle>? _triangularMesh = null;
 
     public List<Triangle> GetMeshTriangles()
@@ -105,4 +112,7 @@ public class Mesh(MeshLayout meshLayout, List<float> vertexPositions, List<float
     public MeshLayout MeshLayout { get; } = meshLayout;
     public List<float> VertexPositions { get; } = vertexPositions;
     public List<float> VertexNormals { get; } = vertexNormals;
+    public List<float> xRanges { get; set; }
+    public List<float> yRanges { get; set; }
+    public List<float> zRanges { get; set; }
 }
