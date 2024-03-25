@@ -3,8 +3,8 @@
 layout (local_size_x = 1) in;
 
 struct BVHNode {
-    vec3 minPoint;
-    vec3 maxPoint;
+    vec4 minPoint;
+    vec4 maxPoint;
     uint leftIdx;
     uint rightIdx;
     uint parentIdx;
@@ -25,9 +25,17 @@ layout (std430, binding = 2) buffer sortedMortonCodesBuf {
 
 uniform int numObjs;
 
+int clz(uint x) {
+    int msb = findMSB(x);
+    return (msb == -1) ? 32 : 31 - msb;
+}
+
 int delta(int i, int j) {
+    if (i < 0 || j < 0 || i >= numObjs || j >= numObjs) {
+        return -1;
+    }
     // Return longest common prefixes of binary digits between 32-bit integers i and j
-    return 31 - int(floor(log2(sortedMortonCodes[i] ^ sortedMortonCodes[j])));
+    return clz(sortedMortonCodes[i] ^ sortedMortonCodes[j]);
 }
 
 ivec2 determineRange(uint idx) {
@@ -56,7 +64,51 @@ ivec2 determineRange(uint idx) {
     // Find split position using binary search
     int delNode = delta(i, j);
     int s = 0;
-    for (int t = int(ceil(l/2)); t >= 1; t = int(ceil(t/2))) {
+    
+//    float div2 = 2f;
+//    
+//    int numIts = int(ceil(log2(l/2f)));
+    
+//    for (int i = 0; i < numIts; i++) {
+//        int t = int(ceil(l/(pow(2, i+1))));
+//        
+//        if (t < 1) {
+//            break;
+//        }
+//
+//        if (delta(i, i + (s+t)*d) > delNode) {
+//            s += t;
+//        }
+//
+//        if (t == 1) {
+//            break;
+//        }
+//    }
+
+//    for (int t = int(ceil((l/div2))); t >= 1; div2 *= 2) {
+//
+//        if (delta(i, i + (s+t)*d) > delNode) {
+//            s += t;
+//        }
+//
+//        if (t == 1) {
+//            break;
+//        }
+//    }
+    
+//    for (float t0 = (l/2f); t0 > 2.0f; t0 /= 2f) {
+//        int t = int(ceil(t0));
+//
+//        if (delta(i, i + (s+t)*d) > delNode) {
+//            s += t;
+//        }
+//
+//        if (t == 1 || t0 < 0.5f) {
+//            break;
+//        }
+//    }
+
+    for (int t = (l + 1)/2; t >= 1; t /= 2) {
         if (delta(i, i + (s+t)*d) > delNode) {
             s += t;
         }
@@ -85,10 +137,10 @@ ivec2 determineRange(uint idx) {
         right = gamma + 1;
     }
     
-    BVHNode node;
-    node.leftIdx = left;
-    node.rightIdx = right;
-    BVHInternals[idx] = node;
+//    BVHNode node;
+//    node.leftIdx = left;
+//    node.rightIdx = right;
+//    BVHInternals[idx] = node;
     
     return ivec2(left, right);
 }
@@ -133,43 +185,90 @@ void main() {
     int first = range.x;
     int last = range.y;
     
-    int split = findSplit(first, last);
+    int leftOffset = 0;
+    int rightOffset = 0;
     
-    int childLeftIdx;
-    int childRightIdx;
+    BVHNode currentNode = BVHInternals[idx];
+    BVHNode left;
+    BVHNode right;
+
+    currentNode.leftIdx = first;
+    currentNode.rightIdx = last;
+
+    BVHInternals[idx] = currentNode;
     
-    BVHNode childLeft;
-    if (split == first) {
-        childLeft = BVHLeaves[split];
-        childLeftIdx = numObjs + split;
+    memoryBarrier();
+    
+    if (first > numObjs - 1) {
+        left = BVHLeaves[first - (numObjs)];
+        leftOffset = numObjs;
     } else {
-        childLeft = BVHInternals[split];
-        childLeftIdx = split;
+        left = BVHInternals[first];
     }
     
-    BVHNode childRight;
-    if (split + 1 == last) {
-        childRight = BVHLeaves[split + 1];
-        childRightIdx = numObjs + split + 1;
+    if (last > numObjs - 1) {
+        right = BVHLeaves[last - (numObjs)];
+        rightOffset = numObjs;
     } else {
-        childRight = BVHInternals[split + 1];
-        childRightIdx = split + 1;
+        right = BVHInternals[last];
     }
     
-    BVHInternals[idx].leftIdx = childLeftIdx;
-    BVHInternals[idx].rightIdx = childRightIdx;
-    childLeft.parentIdx = idx;
-    childRight.parentIdx = idx;
     
-    if (split == first) {
-        BVHLeaves[split] = childLeft;
+    
+    left.parentIdx = idx;
+    right.parentIdx = idx;
+    
+    if (leftOffset > 0) {
+        BVHLeaves[first - leftOffset] = left;
     } else {
-        BVHInternals[split] = childLeft;
+        BVHInternals[first] = left;
     }
     
-    if (split + 1 == last) {
-        BVHLeaves[split + 1] = childRight;
+    if (rightOffset > 0) {
+        BVHLeaves[last - rightOffset] = right;
     } else {
-        BVHInternals[split + 1] = childRight;
+        BVHInternals[last] = right;
     }
+    
+    
+    
+//    int split = findSplit(first, last);
+//    
+//    int childLeftIdx;
+//    int childRightIdx;
+//    
+//    BVHNode childLeft;
+//    if (split == first) {
+//        childLeft = BVHLeaves[split];
+//        childLeftIdx = numObjs + split;
+//    } else {
+//        childLeft = BVHInternals[split];
+//        childLeftIdx = split;
+//    }
+//    
+//    BVHNode childRight;
+//    if (split + 1 == last) {
+//        childRight = BVHLeaves[split + 1];
+//        childRightIdx = numObjs + split + 1;
+//    } else {
+//        childRight = BVHInternals[split + 1];
+//        childRightIdx = split + 1;
+//    }
+//    
+//    BVHInternals[idx].leftIdx = childLeftIdx;
+//    BVHInternals[idx].rightIdx = childRightIdx;
+//    childLeft.parentIdx = idx;
+//    childRight.parentIdx = idx;
+//    
+//    if (split == first) {
+//        BVHLeaves[split] = childLeft;
+//    } else {
+//        BVHInternals[split] = childLeft;
+//    }
+//    
+//    if (split + 1 == last) {
+//        BVHLeaves[split + 1] = childRight;
+//    } else {
+//        BVHInternals[split + 1] = childRight;
+//    }
 }

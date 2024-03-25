@@ -6,6 +6,7 @@ using ILGPU.Algorithms.RadixSortOperations;
 using ILGPU.Runtime;
 using ILGPU.Runtime.Cuda;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace RGBDReconstruction.Strategies.BVH;
 
@@ -15,7 +16,7 @@ public class BVHConstructor
     {
         var leafNodes = new BVHNode[numObjects];
         var internalNodes = new BVHNode[numObjects - 1];
-        
+        var blep = new Vector3();
         // Construct leaf nodes
         
         // TODO: Call compute shader which attributes object IDs to leaf nodes
@@ -34,6 +35,12 @@ public class BVHConstructor
         // 3. Select the first child from either the leaf node list or internal node list
         // 4. Select the second child from either the leaf node list or the internal node list
         // 5. Set each child's parent to the current internal node
+        
+        var vec2list = new List<Vector2>();
+        for (uint i = 0; i < 100; i++)
+        {
+            vec2list.Add(determineRange(i, numObjects, sortedMortonCodes));
+        }
 
         BVHGenerationComputeShader(internalNodes, leafNodes, numObjects, sortedMortonCodes);
 
@@ -42,7 +49,99 @@ public class BVHConstructor
         internalNodes.CopyTo(BVHNodes, 0);
         leafNodes.CopyTo(BVHNodes, numObjects-1);
 
+        
+
         return BVHNodes;
+    }
+    
+    static int clz(uint x)
+    {
+        return IntrinsicMath.BitOperations.LeadingZeroCount(x);
+    }
+
+    static int delta(int i, int j, int numObjs, uint[] sortedMortonCodes) {
+        if (i < 0 || j < 0 || i >= numObjs || j >= numObjs) {
+            return -1;
+        }
+        // Return longest common prefixes of binary digits between 32-bit integers i and j
+        return clz(sortedMortonCodes[i] ^ sortedMortonCodes[j]);
+    }
+
+    static Vector2 determineRange(uint idx, int numObjs, uint[] sortedMortonCodes) {
+        int i = (int)idx;
+    
+        // Determine direction of range (+1 for right box, -1 for left box)
+        int d = Math.Sign(delta(i, i+1, numObjs, sortedMortonCodes) - delta(i, i-1, numObjs, sortedMortonCodes));
+    
+        // Compute upper bound for length of range
+        int delMin = delta(i, i-d, numObjs, sortedMortonCodes);
+        int lMax = 2;
+    
+        while (delta(i, i + lMax*d, numObjs, sortedMortonCodes) > delMin) {
+            lMax *= 2;
+        }
+
+        // Find the other end using binary search
+        int l = 0;
+        for (int t = lMax/2; t >= 1; t /= 2) {
+            if (delta(i, i + (l + t)*d, numObjs, sortedMortonCodes) > delMin) {
+                l += t;
+            }
+        }
+        int j = i + l*d;
+
+        // Find split position using binary search
+        int delNode = delta(i, j, numObjs, sortedMortonCodes);
+        int s = 0;
+        // for (float t0 = l/2f; t0 > 0.6f; t0 /= 2f )
+        // {
+        //     var t = (int)Math.Ceiling(t0);
+        //     
+        //     if (delta(i, i + (s+t)*d, numObjs, sortedMortonCodes) > delNode) {
+        //         s += t;
+        //     }
+        //
+        //     if (t == 1 || t0 < 0.5f)
+        //     {
+        //         break;
+        //     }
+        // }
+        
+        for (int t = (l + 1)/2; t >= 1; t /= 2) {
+            if (delta(i, i + (s+t)*d, numObjs, sortedMortonCodes) > delNode) {
+                s += t;
+            }
+        }
+
+        int gamma = i + s*d + Math.Min(d, 0);
+    
+        int left;
+        int right;
+
+        // Output child pointers
+        if (Math.Min(i, j) == gamma) {
+            // If the split is on the boundary, then the left node is a leaf node.
+            // Left holds a reference to the leaf array, which is distinguished from
+            // the internal nodes array by having the index be greater than n.
+            // Internal nodes array length = n-1, leaf (object) array = n for reference.
+        
+            left = numObjs + gamma;
+        } else {
+            left = gamma;
+        }
+        if (Math.Max(i,j) == gamma + 1) {
+            // Same but for the upper bound
+            right = numObjs + gamma + 1;
+        } else {
+            right = gamma + 1;
+        }
+    
+//    BVHNode node;
+//    node.leftIdx = left;
+//    node.rightIdx = right;
+//    BVHInternals[idx] = node;
+    
+        return new Vector2(left, right);
     }
 
     public static BVHNode[] GetBVH(float[] positionArray, int[] indexArray, float[] xRanges, float[] yRanges, float[] zRanges)
@@ -215,6 +314,8 @@ public class BVHConstructor
         // read the data
         GL.GetNamedBufferSubData(mortonCodeBufferHandle, 0, sizeof(uint) * mortonCodeData.Length, mortonCodeData);
         
+        computeShader.Dispose();
+        
         //return new uint[10];
         return mortonCodeData;
     }
@@ -256,11 +357,14 @@ public class BVHConstructor
         watch.Reset();
         watch.Start();
         GL.DispatchCompute(numObjs - 1, 1, 1);
+        //GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
         watch.Stop();
         Console.WriteLine("BVH Construction time (GPU): {0}ms", watch.ElapsedMilliseconds);
         
         // read the data
-        GL.GetNamedBufferSubData(BVHInternalNodeBufferHandle, 0, Marshal.SizeOf<BVHNode>() * internalNodes.Length, internalNodes);
-        GL.GetNamedBufferSubData(BVHLeafNodeBufferHandle, 0, Marshal.SizeOf<BVHNode>() * leafNodes.Length, leafNodes);
+        GL.GetNamedBufferSubData(BVHInternalNodeBufferHandle, 0, Marshal.SizeOf<BVHNode>() * internalNodes.Length, ref internalNodes[0]);
+        GL.GetNamedBufferSubData(BVHLeafNodeBufferHandle, 0, Marshal.SizeOf<BVHNode>() * leafNodes.Length, ref leafNodes[0]);
+        
+        computeShader.Dispose();
     }
 }

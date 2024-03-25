@@ -4,6 +4,7 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using RGBDReconstruction.Application;
 using Geometry;
+using ILGPU.Util;
 
 namespace RGBDReconstruction.Strategies;
 
@@ -393,6 +394,8 @@ public class DepthTessellator
         var xRes = new[] { xRanges.Min(), xRanges.Max() };
         var yRes = new[] { yRanges.Min(), yRanges.Max() };
         var zRes = new[] { zRanges.Min(), zRanges.Max() };
+        
+        computeShader.Dispose();
         
         return (xRes, yRes, zRes);
     }
