@@ -58,9 +58,9 @@ void writeTriangleData(vec3 v1, vec3 v2, vec3 v3, ivec3 nv1, ivec3 nv2, ivec3 nv
         vec2 texCoord = vec2((fy*pos.x/pos.z + cy)/height, (fx*pos.y/pos.z + cx)/width);
 
         ivec3 nPos = ntri1[i];
-        int idx = (nPos.y * width + nPos.x);
+        int idx = ((nPos.y)/(yres) * (width/xres) + (nPos.x/xres));
 
-        int idxidx = 6*(y*width + x) + i + stride;
+        int idxidx = 6*((y/yres)*(width/xres) + x/xres) + i + stride;
         indexArray[idxidx] = idx;
         positionArray[idx*3] = pos.x;
         positionArray[idx*3+1] = pos.y;
@@ -77,8 +77,8 @@ void main()
 {
     
     ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);
-    int y = storePos.x;
-    int x = storePos.y;
+    int y = storePos.x*yres;
+    int x = storePos.y*xres;
     ivec2 pos = ivec2(x,y);
     
     //positionArray[y*height + x] = imageLoad(depthBuffer, pos).r;

@@ -113,17 +113,17 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
     protected void GetVoxelsNearMesh(HashSet<Vector3> voxels, Mesh mesh)
     {
         var triangles = mesh.GetMeshTriangles();
-        foreach (var triangle in triangles)
+        foreach (var triangle in triangles) 
         {
             // Get voxels near the triangle:
             // Loop through the bounding box of the triangle given by its smallest and largest x y z coords of
             // all 3 vertices.
 
-            var smallestCoords = new []
+            var smallestCoords = new[]
             {
                 float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity
             };
-            var largestCoords = new []
+            var largestCoords = new[]
             {
                 float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity
             };

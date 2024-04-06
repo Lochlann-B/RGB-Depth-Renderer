@@ -1,4 +1,5 @@
 ﻿#version 450
+#extension GL_ARB_gpu_shader_int64 : enable
 
 layout (local_size_x = 1) in;
 
@@ -20,21 +21,37 @@ layout (std430, binding = 1) buffer BVHLeafNodes {
 };
 
 layout (std430, binding = 2) buffer sortedMortonCodesBuf {
-    uint sortedMortonCodes[];
+    uint64_t sortedMortonCodes[];
 };
 
 uniform int numObjs;
 
-int clz(uint x) {
-    int msb = findMSB(x);
-    return (msb == -1) ? 32 : 31 - msb;
+int findMSB64(uint64_t value) {
+    uint upper = uint(value >> 32);
+    uint lower = uint(value & 0xFFFFFFFFul);
+
+    if (upper != 0) {
+        // MSB is in the upper 32 bits
+        return 32 + findMSB(upper); // Add 32 because findMSB returns index in [0, 31]
+    } else {
+        // MSB is in the lower 32 bits
+        return findMSB(lower);
+    }
+}
+
+int clz(uint64_t x) {
+    int msb = findMSB64(x);
+    return (msb == -1) ? 64 : 63 - msb;
 }
 
 int delta(int i, int j) {
     if (i < 0 || j < 0 || i >= numObjs || j >= numObjs) {
         return -1;
     }
-    // Return longest common prefixes of binary digits between 32-bit integers i and j
+    if (sortedMortonCodes[i] == sortedMortonCodes[j]) {
+        return clz(uint64_t(i) ^ uint64_t(j));
+    }
+    // Return longest common prefixes of binary digits between 64-bit integers i and j
     return clz(sortedMortonCodes[i] ^ sortedMortonCodes[j]);
 }
 
@@ -43,6 +60,9 @@ ivec2 determineRange(uint idx) {
     
     // Determine direction of range (+1 for right box, -1 for left box)
     int d = sign(delta(i, i+1) - delta(i, i-1));
+    if (d == 0) {
+        d = 1;
+    }
     
     // Compute upper bound for length of range
     int delMin = delta(i, i-d);
@@ -61,56 +81,57 @@ ivec2 determineRange(uint idx) {
     }
     int j = i + l*d;
 
+    if (i == 0) {
+        j = numObjs - 2;
+    } else {
+        uint64_t prevCode = sortedMortonCodes[i - 1];
+        uint64_t currCode = sortedMortonCodes[i];
+        uint64_t nextCode = sortedMortonCodes[i + 1];
+        
+        int initialIdx = i;
+        
+        if (prevCode == currCode && nextCode == currCode) {
+            int UB = numObjs - 2;
+            int LB = i;
+            uint64_t originalCode = currCode;
+            while (i > 0 && i < numObjs - 1) {
+                i = (UB + LB) / 2;
+                if (i >= numObjs - 1) {
+                    break;
+                }
+                
+                if (sortedMortonCodes[i] != originalCode && originalCode != sortedMortonCodes[i + 1]) {
+                    // gone too high, reduce upper bound
+                    UB = i;
+                }
+                
+                if (sortedMortonCodes[i] == originalCode && sortedMortonCodes[i + 1] == originalCode) {
+                    // gone too low, increase lower bound
+                    LB = i;
+                }
+                
+                if (sortedMortonCodes[i] == originalCode && originalCode != sortedMortonCodes[i + 1]) {
+                    j = i;
+                    i = initialIdx;
+                    break;
+                }
+            }
+        }
+    }
+    
+    
+    
     // Find split position using binary search
     int delNode = delta(i, j);
     int s = 0;
-    
-//    float div2 = 2f;
-//    
-//    int numIts = int(ceil(log2(l/2f)));
-    
-//    for (int i = 0; i < numIts; i++) {
-//        int t = int(ceil(l/(pow(2, i+1))));
-//        
-//        if (t < 1) {
-//            break;
-//        }
-//
-//        if (delta(i, i + (s+t)*d) > delNode) {
-//            s += t;
-//        }
-//
-//        if (t == 1) {
-//            break;
-//        }
-//    }
-
-//    for (int t = int(ceil((l/div2))); t >= 1; div2 *= 2) {
-//
-//        if (delta(i, i + (s+t)*d) > delNode) {
-//            s += t;
-//        }
-//
-//        if (t == 1) {
-//            break;
-//        }
-//    }
-    
-//    for (float t0 = (l/2f); t0 > 2.0f; t0 /= 2f) {
-//        int t = int(ceil(t0));
-//
-//        if (delta(i, i + (s+t)*d) > delNode) {
-//            s += t;
-//        }
-//
-//        if (t == 1 || t0 < 0.5f) {
-//            break;
-//        }
-//    }
 
     for (int t = (l + 1)/2; t >= 1; t /= 2) {
         if (delta(i, i + (s+t)*d) > delNode) {
             s += t;
+        }
+        
+        if (t > 1) {
+            t++;
         }
     }
 
@@ -126,57 +147,18 @@ ivec2 determineRange(uint idx) {
         // the internal nodes array by having the index be greater than n.
         // Internal nodes array length = n-1, leaf (object) array = n for reference.
         
-        left = numObjs + gamma;
+        left = numObjs + gamma - 1;
     } else {
         left = gamma;
     }
     if (max(i,j) == gamma + 1) {
         // Same but for the upper bound
-        right = numObjs + gamma + 1;
+        right = numObjs + gamma;
     } else {
         right = gamma + 1;
     }
     
-//    BVHNode node;
-//    node.leftIdx = left;
-//    node.rightIdx = right;
-//    BVHInternals[idx] = node;
-    
     return ivec2(left, right);
-}
-
-int findSplit(int first, int last) {
-    uint firstCode = sortedMortonCodes[first];
-    uint lastCode = sortedMortonCodes[last];
-    
-    if (firstCode == lastCode) {
-        return (first + last) >> 1;
-    }
-    
-    int commonPrefix = 31 - int(floor(log2(firstCode ^ lastCode)));
-    
-    // Use binary search to see where next bit differs
-    
-    int split = first;
-    int step = last - first;
-    
-    bool doWhileFlag = true;
-    
-    while (doWhileFlag || step > 1) {
-        doWhileFlag = false;
-        step = (step + 1) >> 1;
-        int newSplit = split + step;
-        
-        if (newSplit < last) {
-            uint splitCode = sortedMortonCodes[newSplit];
-            int splitPrefix = 31 - int(floor(log2(firstCode ^ splitCode)));
-            if (splitPrefix > commonPrefix) {
-                split = newSplit;
-            }
-        }
-    }
-    
-    return split;
 }
 
 void main() {
@@ -188,35 +170,39 @@ void main() {
     int leftOffset = 0;
     int rightOffset = 0;
     
+    memoryBarrierBuffer();
+    
     BVHNode currentNode = BVHInternals[idx];
     BVHNode left;
     BVHNode right;
 
-    currentNode.leftIdx = first;
-    currentNode.rightIdx = last;
+    currentNode.leftIdx = uint(first);
+    currentNode.rightIdx = uint(last);
 
     BVHInternals[idx] = currentNode;
     
-    memoryBarrier();
+    memoryBarrierBuffer();
     
-    if (first > numObjs - 1) {
-        left = BVHLeaves[first - (numObjs)];
-        leftOffset = numObjs;
+    if (first >= numObjs - 1) {
+        left = BVHLeaves[first - (numObjs - 1)];
+        leftOffset = numObjs - 1;
     } else {
         left = BVHInternals[first];
     }
     
-    if (last > numObjs - 1) {
-        right = BVHLeaves[last - (numObjs)];
-        rightOffset = numObjs;
+    if (last >= numObjs - 1) {
+        right = BVHLeaves[last - (numObjs - 1)];
+        rightOffset = numObjs - 1;
     } else {
         right = BVHInternals[last];
     }
     
-    
+    memoryBarrierBuffer();
     
     left.parentIdx = idx;
     right.parentIdx = idx;
+    
+    memoryBarrierBuffer();
     
     if (leftOffset > 0) {
         BVHLeaves[first - leftOffset] = left;
@@ -230,45 +216,5 @@ void main() {
         BVHInternals[last] = right;
     }
     
-    
-    
-//    int split = findSplit(first, last);
-//    
-//    int childLeftIdx;
-//    int childRightIdx;
-//    
-//    BVHNode childLeft;
-//    if (split == first) {
-//        childLeft = BVHLeaves[split];
-//        childLeftIdx = numObjs + split;
-//    } else {
-//        childLeft = BVHInternals[split];
-//        childLeftIdx = split;
-//    }
-//    
-//    BVHNode childRight;
-//    if (split + 1 == last) {
-//        childRight = BVHLeaves[split + 1];
-//        childRightIdx = numObjs + split + 1;
-//    } else {
-//        childRight = BVHInternals[split + 1];
-//        childRightIdx = split + 1;
-//    }
-//    
-//    BVHInternals[idx].leftIdx = childLeftIdx;
-//    BVHInternals[idx].rightIdx = childRightIdx;
-//    childLeft.parentIdx = idx;
-//    childRight.parentIdx = idx;
-//    
-//    if (split == first) {
-//        BVHLeaves[split] = childLeft;
-//    } else {
-//        BVHInternals[split] = childLeft;
-//    }
-//    
-//    if (split + 1 == last) {
-//        BVHLeaves[split + 1] = childRight;
-//    } else {
-//        BVHInternals[split + 1] = childRight;
-//    }
+    memoryBarrier();
 }

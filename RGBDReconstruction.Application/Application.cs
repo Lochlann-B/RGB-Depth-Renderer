@@ -85,25 +85,35 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         
          Console.WriteLine("Instantiating voxel grid start...");
          watch.Start();
-         var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
+         //var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
+         
+         var voxelGrid1 = new VoxelGridBVH(100, -5.0f, -5.0f, 0f, 0.1f);
+         var voxelGrid2 = new VoxelGridDeviceBVH(100, -5.0f, -5.0f, 0f, 0.1f);
          watch.Stop();
          Console.WriteLine("Voxel grid instantiation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
          watch.Reset();
-        
-         Console.WriteLine("Updating voxel grid with one mesh start...");
+         
+         // Console.WriteLine("Updating voxel grid regular with one mesh start...");
+         // watch.Start();
+         // voxelGrid1.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
+         // watch.Stop();
+         // Console.WriteLine("Voxel grid regular updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+         // watch.Reset();
+         
+         Console.WriteLine("Updating voxel grid GPU with one mesh start...");
          watch.Start();
-         voxelGrid.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
+         voxelGrid2.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
          watch.Stop();
-         Console.WriteLine("Voxel grid updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+         Console.WriteLine("Voxel grid GPU updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
          watch.Reset();
         
-       // var contiguousMeshData = mesh.GetContiguousMeshData();
+        //var contiguousMeshData = mesh.GetContiguousMeshData();
 
         //var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
         
          Console.WriteLine("Marching cubes start...");
          watch.Start();
-         var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid);
+         var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid2);
          watch.Stop();
          Console.WriteLine("Marching cubes finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
          watch.Reset();

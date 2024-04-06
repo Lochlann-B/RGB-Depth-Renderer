@@ -36,6 +36,12 @@
       <None Update="ComputeShaders\MeshRangesComputeShader.glsl">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="ComputeShaders\BoundingBoxComputeShader.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="ComputeShaders\VoxelGridRayTracer.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>

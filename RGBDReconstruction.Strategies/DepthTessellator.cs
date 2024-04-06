@@ -119,7 +119,7 @@ public class DepthTessellator
     {
         int xres = 4;
         int yres = 4;
-        var size = (1080) * (1920);
+        var size = (1080/yres) * (1920/xres);
 
         var uniqueVertices = new HashSet<Vertex>();
         var vertexIndex = new Dictionary<Vertex, int>();
@@ -219,12 +219,12 @@ public class DepthTessellator
 
     public static Mesh TessellateDepthArray(float[,] depthMap)
     {
-        int yres = 4;
-        int xres = 4;
+        int yres = 8;
+        int xres = 8;
         int maxX = depthMap.GetLength(0) - yres;
 
-        int width = depthMap.GetLength(1);
-        int height = depthMap.GetLength(0);
+        int width = depthMap.GetLength(1)/xres;
+        int height = depthMap.GetLength(0)/yres;
 
         int depthBufferTexture = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, depthBufferTexture);
@@ -283,7 +283,7 @@ public class DepthTessellator
 
         watch.Reset();
         watch.Start();
-        GL.DispatchCompute(depthMap.GetLength(0), depthMap.GetLength(1), 1);
+        GL.DispatchCompute(depthMap.GetLength(0)/xres, depthMap.GetLength(1)/yres, 1);
         watch.Stop();
         Console.WriteLine("Tessellation compute shader execution time: {0}", watch.ElapsedMilliseconds);
 
