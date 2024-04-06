@@ -97,9 +97,9 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
 
         voxels.Add(startVox);
         var v = startVox;
-        var xInc = float.Min(xStart + Resolution * (Size - 1), v[0] + Resolution);
-        var yInc = float.Min(yStart + Resolution * (Size - 1), v[1] + Resolution);
-        var zInc = float.Min(zStart + Resolution * (Size - 1), v[2] + Resolution);
+        var xInc = float.Min(xStart + Resolution * (Size - 2), v[0] + Resolution);
+        var yInc = float.Min(yStart + Resolution * (Size - 2), v[1] + Resolution);
+        var zInc = float.Min(zStart + Resolution * (Size - 2), v[2] + Resolution);
         voxels.Add(new Vector3(xInc, v[1], v[2]));
         voxels.Add(new Vector3(xInc, v[1], zInc));
         voxels.Add(new Vector3(v[0], v[1], zInc));

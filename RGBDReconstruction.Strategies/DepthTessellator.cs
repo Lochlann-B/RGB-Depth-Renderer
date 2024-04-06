@@ -219,8 +219,8 @@ public class DepthTessellator
 
     public static Mesh TessellateDepthArray(float[,] depthMap)
     {
-        int yres = 8;
-        int xres = 8;
+        int yres = 20;
+        int xres = 20;
         int maxX = depthMap.GetLength(0) - yres;
 
         int width = depthMap.GetLength(1)/xres;

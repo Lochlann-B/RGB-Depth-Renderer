@@ -622,6 +622,7 @@ static void morton(float[] positionBufferArray, float[] xRanges, float[] yRanges
         GL.GetNamedBufferSubData(leafNodesBufferSSBO, 0, Marshal.SizeOf<BVHNode>() * leafNodes.Length, ref leafNodes[0]);
         
         computeShader.Dispose();
+        GL.Flush();
 
         var currentNode = internalNodes[0];
         var numObjs = leafNodes.Length;

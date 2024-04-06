@@ -86,9 +86,14 @@ public class Application(int width, int height, string title) : GameWindow(GameW
          Console.WriteLine("Instantiating voxel grid start...");
          watch.Start();
          //var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
+         var size = 400;
+         var resX = (bmesh.xRanges[1] - bmesh.xRanges[0]) / (size-2);
+         var resY = (bmesh.yRanges[1] - bmesh.yRanges[0]) / (size-2);
+         var resZ = (bmesh.zRanges[1] - bmesh.zRanges[0]) / (size-2);
+         var res = Math.Max(resX, Math.Max(resY, resZ));
          
-         var voxelGrid1 = new VoxelGridBVH(100, -5.0f, -5.0f, 0f, 0.1f);
-         var voxelGrid2 = new VoxelGridDeviceBVH(100, -5.0f, -5.0f, 0f, 0.1f);
+         var voxelGrid1 = new VoxelGridBVH(size, bmesh.xRanges[0], bmesh.yRanges[0], bmesh.zRanges[0], res);
+         var voxelGrid2 = new VoxelGridDeviceBVH(size, bmesh.xRanges[0], bmesh.yRanges[0], bmesh.zRanges[0], res);
          watch.Stop();
          Console.WriteLine("Voxel grid instantiation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
          watch.Reset();

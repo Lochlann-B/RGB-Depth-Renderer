@@ -30,7 +30,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
 
         var seenVoxels = new System.Numerics.Vector4[Size * Size * Size];
         
-        var closeVoxels = new HashSet<Vector3>();
+        var closeVoxels = new HashSet<System.Numerics.Vector4>();
         
         // TODO: Make parallel?
         var watch = new Stopwatch();
@@ -56,6 +56,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         _computeShader.SetUniformFloat("yStart", YStart);
         _computeShader.SetUniformFloat("zStart", ZStart);
         _computeShader.SetUniformVec3("cameraPos", ref cameraPos);
+        _computeShader.SetUniformInt("groupSize", 50000);
         
         int positionBufferSSBO = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, positionBufferSSBO);
@@ -89,7 +90,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         
         int closeVoxelsBufferSSBO = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, closeVoxelsBufferSSBO);
-        GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<System.Numerics.Vector4>()*closeVoxelData.Length, closeVoxelData, BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<System.Numerics.Vector4>()*closeVoxelData.Length, closeVoxelData, BufferUsageHint.StaticRead);
         GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 5, closeVoxelsBufferSSBO);
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
 
@@ -98,10 +99,15 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.BufferData(BufferTarget.AtomicCounterBuffer, (IntPtr)(sizeof(uint)), IntPtr.Zero, BufferUsageHint.DynamicDraw);
         GL.BindBufferBase(BufferRangeTarget.AtomicCounterBuffer, 6, atomicCounterBufferID);
         GL.BindBuffer(BufferTarget.AtomicCounterBuffer, 0);
-        
-        GL.DispatchCompute(closeVoxelData.Length, 1, 1);
-        GL.MemoryBarrier(MemoryBarrierFlags.AtomicCounterBarrierBit);
-        GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
+
+        for (int groupIdx = 0; groupIdx * 50000 < closeVoxelData.Length; groupIdx++)
+        {
+            _computeShader.SetUniformInt("groupIdx", groupIdx);
+         
+            GL.DispatchCompute(Math.Min(50000, closeVoxelData.Length-50000*groupIdx), 1, 1);
+            //GL.MemoryBarrier(MemoryBarrierFlags.AtomicCounterBarrierBit);
+            GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
+        }
         
         Console.WriteLine(GL.GetError());
         
@@ -110,6 +116,8 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.GetNamedBufferSubData(voxelValuesBufferSSBO, 0, sizeof(float) * _voxelValues.Length, ref _voxelValues[0]);
         GL.GetNamedBufferSubData(atomicCounterBufferID, 0, sizeof(int), ref counterValue);
         //GL.CopyBufferSubData();
+        GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
+        GL.Flush();
         var seenVoxHashSet = new HashSet<Vector3>();
         for (int i = 0; i < seenVoxels.Length; i++)
         {
@@ -181,9 +189,9 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
 
         voxels.Add(startVox);
         var v = startVox;
-        var xInc = float.Min(xStart + Resolution * (Size - 1), v[0] + Resolution);
-        var yInc = float.Min(yStart + Resolution * (Size - 1), v[1] + Resolution);
-        var zInc = float.Min(zStart + Resolution * (Size - 1), v[2] + Resolution);
+        var xInc = float.Min(xStart + Resolution * (Size - 2), v[0] + Resolution);
+        var yInc = float.Min(yStart + Resolution * (Size - 2), v[1] + Resolution);
+        var zInc = float.Min(zStart + Resolution * (Size - 2), v[2] + Resolution);
         voxels.Add(new System.Numerics.Vector4(xInc, v[1], v[2],1f));
         voxels.Add(new System.Numerics.Vector4(xInc, v[1], zInc,1f));
         voxels.Add(new System.Numerics.Vector4(v[0], v[1], zInc,1f));
@@ -194,7 +202,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         
     }
 
-int index(float px, float py, float pz) {
+int indexx(float px, float py, float pz) {
     float nX = (px - XStart).RoundToInterval(Resolution);
     float nY = (py - YStart).RoundToInterval(Resolution);
     float nZ = (pz - ZStart).RoundToInterval(Resolution);
@@ -317,13 +325,13 @@ float minMagnitude(float f1, float f2) {
     return f2;
 }
 
-    private void blep(Vector3[] closeVoxels, Vector3 cameraPos, BVHNode[] nodes, int numObjs, float[] positionArray, int[] indexArray)
+    private void blep(System.Numerics.Vector4[] closeVoxels, Vector3 cameraPos, BVHNode[] nodes, int numObjs, float[] positionArray, int[] indexArray)
     {
         var seenVoxList = new HashSet<Vector3>();
         for (int idx = 0; idx < closeVoxels.Length; idx++)
         {
 
-            Vector3 voxel = closeVoxels[idx];
+            Vector3 voxel = new Vector3(closeVoxels[idx][0], closeVoxels[idx][1], closeVoxels[idx][2]);
 
             Vector3 raySource = cameraPos;
             Vector3 rayDirection = Vector3.Normalize(voxel - raySource);
@@ -341,7 +349,13 @@ float minMagnitude(float f1, float f2) {
             int iters = -1;
 
             while (stackPointer > 0)
+            //for (int ble = 0; ble < 5*(numObjs - 1); ble++)
             {
+
+                if (stackPointer <= 0)
+                {
+                    break;
+                }
                 iters++;
                 if (iters > 5000000)
                 {
@@ -369,7 +383,13 @@ float minMagnitude(float f1, float f2) {
                             dist *= -1;
                         }
 
-                        minDist = float.MinMagnitude(dist, minDist);
+                        minDist = minMagnitude(dist, minDist);
+                        var idxx = indexx(voxel[0], voxel[1], voxel[2]);
+                        if (idxx == 313941)
+                        {
+                            var egg = 2;
+                        }
+                        _voxelValues[idxx] = 10;
                         seenVoxList.Add(voxel);
                     }
                 }

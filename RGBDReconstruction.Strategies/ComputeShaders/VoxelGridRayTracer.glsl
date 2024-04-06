@@ -49,6 +49,9 @@ uniform float zStart;
 
 uniform vec3 cameraPos;
 
+uniform int groupSize;
+uniform int groupIdx;
+
 float roundToInterval(float v, float interval) {
     if (interval == 0f) {
         return 1/0f;
@@ -181,8 +184,12 @@ float minMagnitude(float f1, float f2) {
 }
 
 void main() {
-    uint idx = gl_GlobalInvocationID.x;
+    uint idx = gl_GlobalInvocationID.x + groupIdx*groupSize;
     vec3 voxel = closeVoxels[idx].xyz;
+
+//    voxelValues[idx] = 999f;
+//    seenVoxels[idx] = vec4(voxel, 1.0);
+//    return;
     
     vec3 raySource = cameraPos;
     vec3 rayDirection = normalize(voxel - raySource);
@@ -190,7 +197,7 @@ void main() {
     //int rayIntersectObjIds[50];
     
     // Do ray intersection
-    int stack[200];
+    int stack[20];
     int stackPointer = 0;
     
     stack[stackPointer] = 0;
