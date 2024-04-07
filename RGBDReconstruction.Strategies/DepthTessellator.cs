@@ -219,8 +219,8 @@ public class DepthTessellator
 
     public static Mesh TessellateDepthArray(float[,] depthMap)
     {
-        int yres = 20;
-        int xres = 20;
+        int yres = 8;
+        int xres = 8;
         int maxX = depthMap.GetLength(0) - yres;
 
         int width = depthMap.GetLength(1)/xres;
@@ -283,7 +283,7 @@ public class DepthTessellator
 
         watch.Reset();
         watch.Start();
-        GL.DispatchCompute(depthMap.GetLength(0)/xres, depthMap.GetLength(1)/yres, 1);
+        GL.DispatchCompute(depthMap.GetLength(0)/yres, depthMap.GetLength(1)/xres, 1);
         watch.Stop();
         Console.WriteLine("Tessellation compute shader execution time: {0}", watch.ElapsedMilliseconds);
 

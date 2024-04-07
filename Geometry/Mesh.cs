@@ -20,7 +20,7 @@ public class Mesh(MeshLayout meshLayout, List<float> vertexPositions, List<float
         {
             return _triangularMesh;
         }
-
+        
         _triangularMesh = new List<Triangle>();
         
         var indices = MeshLayout.IndexArray;

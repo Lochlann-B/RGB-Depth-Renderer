@@ -4,7 +4,7 @@ using Geometry;
 using OpenTK.Graphics.OpenGL;
 using System.Numerics;
 using OpenTK.Mathematics;
-using OpenTKDowngradeHelper;
+// using OpenTKDowngradeHelper;
 using RGBDReconstruction.Strategies.BVH;
 using Vector2 = OpenTK.Mathematics.Vector2;
 using Vector3 = OpenTK.Mathematics.Vector3;
@@ -46,6 +46,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         BVH = BVHConstructor.GetBVH(posArray, indexArray, xRanges, yRanges, zRanges);
         
         //blep(closeVoxels.ToArray(), cameraPos, BVH, (BVH.Length + 1)/2, posArray, indexArray);
+        //return;
         
         _computeShader.Use();
         
@@ -56,7 +57,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         _computeShader.SetUniformFloat("yStart", YStart);
         _computeShader.SetUniformFloat("zStart", ZStart);
         _computeShader.SetUniformVec3("cameraPos", ref cameraPos);
-        _computeShader.SetUniformInt("groupSize", 50000);
+        _computeShader.SetUniformInt("groupSize", 10000);
         
         int positionBufferSSBO = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, positionBufferSSBO);
@@ -100,11 +101,12 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.BindBufferBase(BufferRangeTarget.AtomicCounterBuffer, 6, atomicCounterBufferID);
         GL.BindBuffer(BufferTarget.AtomicCounterBuffer, 0);
 
-        for (int groupIdx = 0; groupIdx * 50000 < closeVoxelData.Length; groupIdx++)
+        for (int groupIdx = 0; groupIdx * 10000 < closeVoxelData.Length; groupIdx++)
         {
             _computeShader.SetUniformInt("groupIdx", groupIdx);
          
-            GL.DispatchCompute(Math.Min(50000, closeVoxelData.Length-50000*groupIdx), 1, 1);
+            GL.DispatchCompute(Math.Min(10000, closeVoxelData.Length-10000*groupIdx), 1, 1);
+            // GL.DispatchCompute(closeVoxelData.Length, 1, 1);
             //GL.MemoryBarrier(MemoryBarrierFlags.AtomicCounterBarrierBit);
             GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
         }
@@ -180,12 +182,13 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
     
     protected void AddNeighbouringVoxels(HashSet<System.Numerics.Vector4> voxels, Vector3 coord)
     {
-        var startVox = new System.Numerics.Vector4(
-            coord[0].FloorToInterval(Resolution),
-            coord[1].FloorToInterval(Resolution),
-            coord[2].FloorToInterval(Resolution),
-            1.0f
-        );
+        // var startVox = new System.Numerics.Vector4(
+        //     coord[0].FloorToInterval(Resolution),
+        //     coord[1].FloorToInterval(Resolution),
+        //     coord[2].FloorToInterval(Resolution),
+        //     1.0f
+        // );
+        var startVox = new System.Numerics.Vector4(coord[0], coord[1], coord[2], 1.0f);
 
         voxels.Add(startVox);
         var v = startVox;
@@ -385,12 +388,7 @@ float minMagnitude(float f1, float f2) {
 
                         minDist = minMagnitude(dist, minDist);
                         var idxx = indexx(voxel[0], voxel[1], voxel[2]);
-                        if (idxx == 313941)
-                        {
-                            var egg = 2;
-                        }
-                        _voxelValues[idxx] = 10;
-                        seenVoxList.Add(voxel);
+                        
                     }
                 }
                 else
@@ -409,7 +407,15 @@ float minMagnitude(float f1, float f2) {
                 }
             }
 
+            seenVoxList.Add(voxel);
+            if (minDist < float.PositiveInfinity)
+            {
+                this[voxel[0], voxel[1], voxel[2]] = minDist;
+            }
+
         }
+
+        _seenVoxels = [..seenVoxList];
     }
     
 }

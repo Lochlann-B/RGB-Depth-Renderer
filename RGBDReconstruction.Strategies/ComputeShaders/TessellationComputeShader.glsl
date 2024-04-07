@@ -44,7 +44,7 @@ bool lengthLongerThanThreshold(vec3 v1, vec3 v2, vec3 v3, float threshold) {
 }
 
 void writeTriangleData(vec3 v1, vec3 v2, vec3 v3, ivec3 nv1, ivec3 nv2, ivec3 nv3, int stride, float fx, float fy, int width, int height, int cx, int cy, int x, int y) {
-    if(lengthLongerThanThreshold(v1, v2, v3, 0.1f)) {
+    if(lengthLongerThanThreshold(v1, v2, v3, (xres + yres)/80f + 0.1f)) {
         return;
     }
     vec3 normal = normal(v1, v2, v3);
@@ -134,10 +134,18 @@ void main()
 //    vec3 v4 = vec3( x+xres, y, depths.w );
     
     // Non-projected vertices - used for indexing
+    int adjXRes = xres;
+    int adjYRes = yres;
+    if (y >= height - yres) {
+        adjYRes -= yres;
+    }
+    if (x >= width - xres) {
+        adjXRes -= xres;
+    }
     ivec3 nv1 = ivec3( x, y, 1);
-    ivec3 nv2 = ivec3( x, y+yres, 1);
-    ivec3 nv3 = ivec3( x+xres, y+yres, 1 );
-    ivec3 nv4 = ivec3( x+xres, y, 1 );
+    ivec3 nv2 = ivec3( x, y+adjYRes, 1);
+    ivec3 nv3 = ivec3( x+adjXRes, y+adjYRes, 1 );
+    ivec3 nv4 = ivec3( x+adjXRes, y, 1 );
     
     // Triangle 1 - vertices 1, 2, 3
     writeTriangleData(v1, v2, v3, nv1, nv2, nv3, 0, fx, fy, width, height, cx, cy, x, y);

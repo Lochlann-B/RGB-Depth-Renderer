@@ -18,7 +18,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\SimpleScene\SimpleScene\_SimpleScene.csproj" />
       <ProjectReference Include="..\Geometry\Geometry.csproj" />
       <ProjectReference Include="..\OpenTKDowngradeHelper\OpenTKDowngradeHelper.csproj" />
     </ItemGroup>

@@ -197,7 +197,7 @@ void main() {
     //int rayIntersectObjIds[50];
     
     // Do ray intersection
-    int stack[20];
+    int stack[200];
     int stackPointer = 0;
     
     stack[stackPointer] = 0;
@@ -205,10 +205,11 @@ void main() {
     
     float minDist = 1/0f;
     
-    for (int i = 0; i < (numObjs - 1); i++) {
-        if (stackPointer == 0) {
-            break;
-        }
+    //for (int i = 0; i < 5*(numObjs - 1); i++) {
+    while(stackPointer > 0) {
+//        if (stackPointer == 0) {
+//            break;
+//        }
         stackPointer--;
         int index = stack[stackPointer];
         BVHNode node = nodes[index];
@@ -241,11 +242,13 @@ void main() {
         }
     }
     
-    voxelValues[index(voxel.x, voxel.y, voxel.z)] = minDist;
+//    voxelValues[index(voxel.x, voxel.y, voxel.z)] = minDist;
+    seenVoxels[idx] = vec4(voxel, 1.0f);
     
     if (minDist < 1/0f) {
         //seenVoxels[atomicCounter(closeVoxelsIdx)] = vec4(voxel, 1.0f);
-        seenVoxels[index(voxel.x, voxel.y, voxel.z)] = vec4(voxel, 1.0f);
+//        seenVoxels[idx] = vec4(voxel, 1.0f);
+        voxelValues[index(voxel.x, voxel.y, voxel.z)] = minDist;
         //atomicCounterIncrement(closeVoxelsIdx);
     }
 }

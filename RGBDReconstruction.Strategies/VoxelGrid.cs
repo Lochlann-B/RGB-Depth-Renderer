@@ -6,7 +6,7 @@ using Vector3 = OpenTK.Mathematics.Vector3;
 using ILGPU;
 using ILGPU.IR;
 using ILGPU.Runtime;
-using SimpleScene.Util.ssBVH;
+// using SimpleScene.Util.ssBVH;
 
 namespace RGBDReconstruction.Strategies;
 
