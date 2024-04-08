@@ -162,6 +162,12 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
         get => _voxelValues[Index(x, y, z)];
         set => _voxelValues[Index(x, y, z)] = value;
     }
+    
+    public float this[double x, double y, double z]
+    {
+        get => _voxelValues[Index(x, y, z)];
+        set => _voxelValues[Index(x, y, z)] = value;
+    }
 
     public List<Vector3> SeenVoxels => _seenVoxels;
 
@@ -171,6 +177,15 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
         var nY = (y - YStart).RoundToInterval(Resolution);
         var nZ = (z - ZStart).RoundToInterval(Resolution);
 
+        return (int)(nX / Resolution) + (int)((nY / Resolution) * Size) + (int)((nZ / Resolution) * Size * Size);
+    }
+
+    protected int Index(double x, double y, double z)
+    {
+        var nX = (x - xStart).RoundToInterval(Resolution);
+        var nY = (y - YStart).RoundToInterval(Resolution);
+        var nZ = (z - ZStart).RoundToInterval(Resolution);
+        
         return (int)(nX / Resolution) + (int)((nY / Resolution) * Size) + (int)((nZ / Resolution) * Size * Size);
     }
 

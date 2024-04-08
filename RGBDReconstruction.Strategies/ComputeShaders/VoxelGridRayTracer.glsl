@@ -1,4 +1,5 @@
 ﻿#version 450
+#extension GL_ARB_gpu_shader_fp64 : enable
 
 layout (local_size_x = 1) in;
 
@@ -12,7 +13,7 @@ struct BVHNode {
 };
 
 layout (std430, binding = 0) buffer positionBuffer {
-    float positionArray[];
+    highp float positionArray[];
 };
 
 layout (std430, binding = 1) buffer indexBuffer {
@@ -24,7 +25,7 @@ layout (std430, binding = 2) buffer BVHNodeBuffer {
 };
 
 layout (std430, binding = 3) buffer voxelBuffer {
-    float voxelValues[];
+    highp float voxelValues[];
 };
 
 layout (std430, binding = 4) buffer seenVoxelsBuffer {
@@ -39,37 +40,57 @@ layout (binding = 6, offset = 0) uniform atomic_uint closeVoxelsIdx;
 
 uniform int numObjs;
 
-uniform float resolution;
+uniform highp float resolution;
 
 uniform int size;
 
-uniform float xStart;
-uniform float yStart;
-uniform float zStart;
+uniform highp float xStart;
+uniform highp float yStart;
+uniform highp float zStart;
 
-uniform vec3 cameraPos;
+uniform highp vec3 cameraPos;
 
 uniform int groupSize;
 uniform int groupIdx;
 
-float roundToInterval(float v, float interval) {
+double roundToInterval(double v, double interval) {
     if (interval == 0f) {
         return 1/0f;
     }
+
+    double val = v / interval;
+    const highp float eps = 0.00001;
+    double roundedVal;
     
-    return float(round(v / interval)) * interval;
+    double halfway = (floor(val) + ceil(val))/2f;
+    
+    if (val >= halfway - eps && val <= halfway + eps) {
+        if (int(floor(val)) % 2 == 0) {
+            roundedVal = floor(val);
+        } else {
+            roundedVal = ceil(val);
+        }
+    } else {
+        roundedVal = round(val);
+    }
+    
+    return roundedVal * interval;
 }
 
-int index(float px, float py, float pz) {
-    float nX = roundToInterval(px - xStart, resolution);
-    float nY = roundToInterval(py - yStart, resolution);
-    float nZ = roundToInterval(pz - zStart, resolution);
+int index(highp float px, highp float py, highp float pz) {
+//    highp float nX = roundToInterval(px - xStart, resolution);
+//    highp float nY = roundToInterval(py - yStart, resolution);
+//    highp float nZ = roundToInterval(pz - zStart, resolution);
 
-    return int(nX / resolution) + int((nY / resolution) * size) + int((nZ / resolution) * size * size);
+    double nX = roundToInterval(double(px) - double(xStart), double(resolution));
+    double nY = roundToInterval(double(py) - double(yStart), double(resolution));
+    double nZ = roundToInterval(double(pz) - double(zStart), double(resolution));
+
+    return int(nX / double(resolution)) + int((nY / double(resolution))) * size + int((nZ / double(resolution))) * size * size;
 }
 
-bool intersectsPlane(float minCoord, float maxCoord, vec3 n, vec3 raySource, vec3 rayDirection, vec3 axis1, vec2 bounds1, vec3 axis2, vec2 bounds2) {
-    float denominator = dot(n, rayDirection);
+bool intersectsPlane(highp float minCoord, highp float maxCoord, vec3 n, vec3 raySource, vec3 rayDirection, vec3 axis1, vec2 bounds1, vec3 axis2, vec2 bounds2) {
+    highp float denominator = dot(n, rayDirection);
     bool doesIntersect = false;
     if (denominator != 0) {
         // min
@@ -98,13 +119,13 @@ bool rayIntersectsAABB(vec3 raySource, vec3 rayDirection, BVHNode node) {
     // Ray is defined as r = s + td
     
     bool doesIntersect = false;
-    
-    float minX = node.minPoint.x;
-    float maxX = node.maxPoint.x;
-    float minY = node.minPoint.y;
-    float maxY = node.maxPoint.y;
-    float minZ = node.minPoint.z;
-    float maxZ = node.maxPoint.z;
+
+    highp float minX = node.minPoint.x;
+    highp float maxX = node.maxPoint.x;
+    highp float minY = node.minPoint.y;
+    highp float maxY = node.maxPoint.y;
+    highp float minZ = node.minPoint.z;
+    highp float maxZ = node.maxPoint.z;
     
     // x-axis planes
     doesIntersect = doesIntersect || intersectsPlane(minX, maxX, vec3(1, 0, 0), raySource, rayDirection, vec3(0, 1, 0), vec2(minY, maxY), vec3(0, 0, 1), vec2(minZ, maxZ));
@@ -127,7 +148,7 @@ bool pointInsideTriangle(vec3 p, vec3 n, vec3 v1, vec3 v2, vec3 v3) {
     vec3 c2 = p - v2;
     vec3 c3 = p - v3;
     
-    return dot(n, cross(v2 - v1, c1)) > 0 && dot(n, cross(v3 - v2, c2)) > 0 && dot(n, cross(v1 - v3, c3)) > 0;
+    return abs(dot(n, cross(v2 - v1, c1))) > 0 && abs(dot(n, cross(v3 - v2, c2))) > 0 && abs(dot(n, cross(v1 - v3, c3))) > 0;
 }
 
 vec4 rayIntersectsTriangle(vec3 raySource, vec3 rayDirection, BVHNode leafNode) {
@@ -154,10 +175,10 @@ vec4 rayIntersectsTriangle(vec3 raySource, vec3 rayDirection, BVHNode leafNode) 
     if (abs(dot(n, rayDirection)) < 1e-6) {
         return vec4(0, 0, 0, 0);
     }
-    
-    float d = dot(n, v1);
-    
-    float t = (d - dot(n, raySource)) / dot(n, rayDirection);
+
+    highp float d = dot(n, v1);
+
+    highp float t = (d - dot(n, raySource)) / dot(n, rayDirection);
     
     if (t < 0) {
         return vec4(0,0,0,0);
@@ -172,9 +193,9 @@ vec4 rayIntersectsTriangle(vec3 raySource, vec3 rayDirection, BVHNode leafNode) 
     return vec4(0,0,0,0);
 }
 
-float minMagnitude(float f1, float f2) {
-    float t1 = f1 < 0 ? f1 * -1 : f1;
-    float t2 = f2 < 0 ? f2 * -1 : f2;
+float minMagnitude(highp float f1, highp float f2) {
+    highp float t1 = f1 < 0 ? f1 * -1 : f1;
+    highp float t2 = f2 < 0 ? f2 * -1 : f2;
     
     if (t1 < t2) {
         return f1;
@@ -202,8 +223,9 @@ void main() {
     
     stack[stackPointer] = 0;
     stackPointer++;
-    
-    float minDist = 1/0f;
+
+    highp float minDist = 1/0f;
+    uint objIdx = 0;
     
     //for (int i = 0; i < 5*(numObjs - 1); i++) {
     while(stackPointer > 0) {
@@ -220,15 +242,16 @@ void main() {
             vec4 point = rayIntersectsTriangle(raySource, rayDirection, node);
             if (point.w != 0) {
                 vec3 nPoint = point.xyz;
-                float dist = distance(nPoint, voxel);
-                float distV = length(voxel - raySource);
-                float distP = length(nPoint - raySource);
+                highp float dist = distance(nPoint, voxel);
+                highp float distV = length(voxel - raySource);
+                highp float distP = length(nPoint - raySource);
                 
                 if (distV > distP) {
                     dist *= -1;
                 }
                 
                 minDist = minMagnitude(dist, minDist);
+                objIdx = node.objID;
             }
         } else {
             if (node.leftIdx != 0 && rayIntersectsAABB(raySource, rayDirection, nodes[node.leftIdx])) {
@@ -248,6 +271,7 @@ void main() {
     if (minDist < 1/0f) {
         //seenVoxels[atomicCounter(closeVoxelsIdx)] = vec4(voxel, 1.0f);
 //        seenVoxels[idx] = vec4(voxel, 1.0f);
+       // voxelValues[int((voxel.x - xStart)/resolution) + int((voxel.y - yStart)/resolution) * size + size * size * int((voxel.z - zStart)/resolution)] = minDist;
         voxelValues[index(voxel.x, voxel.y, voxel.z)] = minDist;
         //atomicCounterIncrement(closeVoxelsIdx);
     }

@@ -44,7 +44,7 @@ bool lengthLongerThanThreshold(vec3 v1, vec3 v2, vec3 v3, float threshold) {
 }
 
 void writeTriangleData(vec3 v1, vec3 v2, vec3 v3, ivec3 nv1, ivec3 nv2, ivec3 nv3, int stride, float fx, float fy, int width, int height, int cx, int cy, int x, int y) {
-    if(lengthLongerThanThreshold(v1, v2, v3, (xres + yres)/80f + 0.1f)) {
+    if(lengthLongerThanThreshold(v1, v2, v3, 0.1f + (xres + yres)/80f)) {
         return;
     }
     vec3 normal = normal(v1, v2, v3);

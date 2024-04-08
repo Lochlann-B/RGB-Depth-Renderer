@@ -112,7 +112,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
          Console.WriteLine("Voxel grid GPU updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
          watch.Reset();
         
-        //var contiguousMeshData = mesh.GetContiguousMeshData();
+        // var contiguousMeshData = mesh.GetContiguousMeshData();
 
         //var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
         

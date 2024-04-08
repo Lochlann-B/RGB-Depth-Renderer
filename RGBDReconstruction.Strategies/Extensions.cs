@@ -12,6 +12,16 @@ static class Extensions
         return (float) Math.Round(x / interval) * interval;
     }
 
+    public static double RoundToInterval(this double x, double interval)
+    {
+        if (interval == 0f)
+        {
+            throw new ArgumentException("Can't round to nearest 0.");
+        }
+
+        return Math.Round(x / interval) * interval;
+    }
+
     public static float FloorToInterval(this float x, float interval)
     {
         if (interval == 0f)
