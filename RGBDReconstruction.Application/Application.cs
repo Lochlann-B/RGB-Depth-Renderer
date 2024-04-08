@@ -75,7 +75,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         
         //GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
-        var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
+        var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\locky\\OneDrive\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
         Console.WriteLine("Tessellating depth map start...");
         var watch = System.Diagnostics.Stopwatch.StartNew();
         var bmesh = DepthTessellator.TessellateDepthArray(depthValues);
@@ -86,7 +86,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
          Console.WriteLine("Instantiating voxel grid start...");
          watch.Start();
          //var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
-         var size = 400;
+         var size = 200;
          var resX = (bmesh.xRanges[1] - bmesh.xRanges[0]) / (size-2);
          var resY = (bmesh.yRanges[1] - bmesh.yRanges[0]) / (size-2);
          var resZ = (bmesh.zRanges[1] - bmesh.zRanges[0]) / (size-2);
@@ -191,7 +191,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         //_shader.SetUniformMatrix4f("projection", ref _projection);
 
         //_diffuseMap = new Texture("./resources/container2.png");
-        _diffuseMap = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
+        _diffuseMap = new Texture("./resources/frame_0001_cam_001.png");
         _diffuseMap.Use(TextureUnit.Texture0);
 
         //_specularMap = new Texture("./resources/container2_specular.png");

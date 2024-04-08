@@ -397,6 +397,8 @@ public class DepthTessellator
         
         computeShader.Dispose();
         
+        GL.Flush();
+        
         return (xRes, yRes, zRes);
     }
 

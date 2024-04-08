@@ -60,8 +60,8 @@ uniform highp float zStart;
 
 uniform highp vec3 cameraPos;
 
-//uniform int groupSize;
-//uniform int groupIdx;
+uniform int groupSize;
+uniform int groupIdx;
 
 double roundToInterval(double v, double interval) {
     if (interval == 0f) {
@@ -230,7 +230,7 @@ float minMagnitude(highp float f1, highp float f2) {
 }
 
 void main() {
-    uint idx = gl_GlobalInvocationID.x; //+ groupIdx*groupSize;
+    uint idx = gl_GlobalInvocationID.x + groupIdx*groupSize;
     vec3 voxel = closeVoxels[idx].xyz;
 
 //    voxelValues[idx] = 999f;
@@ -267,7 +267,7 @@ void main() {
         if (isLeaf) {
             Triangle triangle = getTriangleFromNode(node);
             vec4 point = rayIntersectsTriangle(raySource, rayDirection, triangle);
-            float currWeight = 1; //abs(dot(getNormal(triangle.v1, triangle.v2, triangle.v3), rayDirection));
+            float currWeight = abs(dot(getNormal(triangle.v1, triangle.v2, triangle.v3), rayDirection));
             if (point.w != 0) {
                 vec3 nPoint = point.xyz;
                 highp float dist = distance(nPoint, voxel);

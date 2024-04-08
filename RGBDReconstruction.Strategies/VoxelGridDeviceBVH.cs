@@ -31,6 +31,8 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         var seenVoxels = new System.Numerics.Vector4[Size * Size * Size];
         
         var closeVoxels = new HashSet<System.Numerics.Vector4>();
+
+        var currentWeights = new float[Size * Size * Size];
         
         // TODO: Make parallel?
         var watch = new Stopwatch();
@@ -108,6 +110,12 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.BufferData(BufferTarget.ShaderStorageBuffer, sizeof(float)*_voxelWeights.Length, _voxelWeights, BufferUsageHint.StaticDraw);
         GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 7, voxelWeightBufferSSBO);
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+        
+        // int currentWeightBufferSSBO = GL.GenBuffer();
+        // GL.BindBuffer(BufferTarget.ShaderStorageBuffer, currentWeightBufferSSBO);
+        // GL.BufferData(BufferTarget.ShaderStorageBuffer, sizeof(float)*currentWeights.Length, currentWeights, BufferUsageHint.StaticDraw);
+        // GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 8, currentWeightBufferSSBO);
+        // GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
             
        //  GL.DispatchCompute(closeVoxelData.Length, 1, 1);
        //  //GL.MemoryBarrier(MemoryBarrierFlags.AtomicCounterBarrierBit);
