@@ -33,13 +33,13 @@ vec3 findCentroid(vec3 v1, vec3 v2, vec3 v3) {
     return vec3((maxX + minX)/2f, (maxY + minY)/2f, (maxZ + minZ)/2f);
 }
 
-//uint expandBits(uint v) {
-//    v = (v * 0x00010001u) & 0xFF0000FFu;
-//    v = (v * 0x00000101u) & 0x0F00F00Fu;
-//    v = (v * 0x00000011u) & 0xC30C30C3u;
-//    v = (v * 0x00000005u) & 0x49249249u;
-//    return v;
-//}
+uint expandBits(uint v) {
+    v = (v * 0x00010001u) & 0xFF0000FFu;
+    v = (v * 0x00000101u) & 0x0F00F00Fu;
+    v = (v * 0x00000011u) & 0xC30C30C3u;
+    v = (v * 0x00000005u) & 0x49249249u;
+    return v;
+}
 
 uint64_t expandBits64(uint a) {
     // Taken from https://www.forceflow.be/2013/10/07/morton-encodingdecoding-through-bit-interleaving-implementations/,
@@ -54,24 +54,39 @@ uint64_t expandBits64(uint a) {
     return v;
 }
 
-//uint getMortonCode(vec3 p) {
-//    float x = p.x;
-//    float y = p.y;
-//    float z = p.z;
-//    x = min(max(x * 1024.0f, 0.0f), 1023.0f);
-//    y = min(max(y * 1024.0f, 0.0f), 1023.0f);
-//    z = min(max(z * 1024.0f, 0.0f), 1023.0f);
-//    uint xx = expandBits(uint(x));
-//    uint yy = expandBits(uint(y));
-//    uint zz = expandBits(uint(z));
-//    return xx * 4 + yy * 2 + zz;
-//}
+uint getMortonCode(vec3 p) {
+    float x = p.x;
+    float y = p.y;
+    float z = p.z;
+    x = min(max(x * 1024.0f, 0.0f), 1023.0f);
+    y = min(max(y * 1024.0f, 0.0f), 1023.0f);
+    z = min(max(z * 1024.0f, 0.0f), 1023.0f);
+    uint xx = expandBits(uint(x));
+    uint yy = expandBits(uint(y));
+    uint zz = expandBits(uint(z));
+    return xx * 4 + yy * 2 + zz;
+}
 
 uint64_t getMortonCode64(vec3 p) {
     //uint64_t answer = 0ul;
     //answer |= expandBits64(uint(p.x)) | expandBits64(uint(p.y)) << 1 | expandBits64(uint(p.z)) << 2;
     //return answer;
     return expandBits64(floatBitsToUint(p.x)) + expandBits64(floatBitsToUint(p.y)) * 2ul + expandBits64(floatBitsToUint(p.z)) * 4ul;
+}
+
+uint64_t getUniqueMortonCode64(vec3 p, uint idx) {
+    float x = p.x;
+    float y = p.y;
+    float z = p.z;
+    x = min(max(x * 1024.0f, 0.0f), 1023.0f);
+    y = min(max(y * 1024.0f, 0.0f), 1023.0f);
+    z = min(max(z * 1024.0f, 0.0f), 1023.0f);
+    uint xx = expandBits(uint(x));
+    uint yy = expandBits(uint(y));
+    uint zz = expandBits(uint(z));
+    
+    uint64_t uniqueCode = ((xx * 4 + yy * 2 + zz) << 32) + idx;
+    return uniqueCode;
 }
 
 void main() {
@@ -117,6 +132,6 @@ void main() {
     
     centre = (centre - minCoords)/(maxCoords - minCoords);
     
-    mortonCodes[gl_GlobalInvocationID.x] = getMortonCode64(centre);
+    mortonCodes[gl_GlobalInvocationID.x] = getUniqueMortonCode64(centre, gl_GlobalInvocationID.x); //getMortonCode64(centre);
     
 }

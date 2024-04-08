@@ -12,6 +12,12 @@ struct BVHNode {
     uint objID;
 };
 
+struct Triangle {
+    vec3 v1;
+    vec3 v2;
+    vec3 v3;
+};
+
 layout (std430, binding = 0) buffer positionBuffer {
     highp float positionArray[];
 };
@@ -38,6 +44,10 @@ layout (std430, binding = 5) buffer closeVoxelsBuffer {
 
 layout (binding = 6, offset = 0) uniform atomic_uint closeVoxelsIdx;
 
+layout (std430, binding = 7) buffer voxelWeightsBuffer {
+    highp float voxelWeights[];
+};
+
 uniform int numObjs;
 
 uniform highp float resolution;
@@ -50,8 +60,8 @@ uniform highp float zStart;
 
 uniform highp vec3 cameraPos;
 
-uniform int groupSize;
-uniform int groupIdx;
+//uniform int groupSize;
+//uniform int groupIdx;
 
 double roundToInterval(double v, double interval) {
     if (interval == 0f) {
@@ -151,8 +161,8 @@ bool pointInsideTriangle(vec3 p, vec3 n, vec3 v1, vec3 v2, vec3 v3) {
     return abs(dot(n, cross(v2 - v1, c1))) > 0 && abs(dot(n, cross(v3 - v2, c2))) > 0 && abs(dot(n, cross(v1 - v3, c3))) > 0;
 }
 
-vec4 rayIntersectsTriangle(vec3 raySource, vec3 rayDirection, BVHNode leafNode) {
-    uint objId = leafNode.objID;
+Triangle getTriangleFromNode(BVHNode node) {
+    uint objId = node.objID;
 
     int i1 = int(3*objId);
     int i2 = i1 + 1;
@@ -169,6 +179,21 @@ vec4 rayIntersectsTriangle(vec3 raySource, vec3 rayDirection, BVHNode leafNode) 
     vec3 v3 = vec3(positionArray[3*indexArray[i3]],
     positionArray[3*indexArray[i3]+1],
     positionArray[3*indexArray[i3]+2]);
+    
+    Triangle tri;
+    tri.v1 = v1;
+    tri.v2 = v2;
+    tri.v3 = v3;
+    
+    return tri;
+}
+
+vec4 rayIntersectsTriangle(vec3 raySource, vec3 rayDirection, Triangle triangle) {
+    vec3 v1 = triangle.v1;
+
+    vec3 v2 = triangle.v2;
+
+    vec3 v3 = triangle.v3;
     
     vec3 n = getNormal(v1, v2, v3);
     
@@ -205,7 +230,7 @@ float minMagnitude(highp float f1, highp float f2) {
 }
 
 void main() {
-    uint idx = gl_GlobalInvocationID.x + groupIdx*groupSize;
+    uint idx = gl_GlobalInvocationID.x; //+ groupIdx*groupSize;
     vec3 voxel = closeVoxels[idx].xyz;
 
 //    voxelValues[idx] = 999f;
@@ -225,6 +250,7 @@ void main() {
     stackPointer++;
 
     highp float minDist = 1/0f;
+    highp float weight = 0f;
     uint objIdx = 0;
     
     //for (int i = 0; i < 5*(numObjs - 1); i++) {
@@ -239,7 +265,9 @@ void main() {
         bool isLeaf = index >= numObjs - 1;
         
         if (isLeaf) {
-            vec4 point = rayIntersectsTriangle(raySource, rayDirection, node);
+            Triangle triangle = getTriangleFromNode(node);
+            vec4 point = rayIntersectsTriangle(raySource, rayDirection, triangle);
+            float currWeight = 1; //abs(dot(getNormal(triangle.v1, triangle.v2, triangle.v3), rayDirection));
             if (point.w != 0) {
                 vec3 nPoint = point.xyz;
                 highp float dist = distance(nPoint, voxel);
@@ -251,6 +279,9 @@ void main() {
                 }
                 
                 minDist = minMagnitude(dist, minDist);
+                if (minDist == dist) {
+                    weight = currWeight;
+                }
                 objIdx = node.objID;
             }
         } else {
@@ -272,7 +303,10 @@ void main() {
         //seenVoxels[atomicCounter(closeVoxelsIdx)] = vec4(voxel, 1.0f);
 //        seenVoxels[idx] = vec4(voxel, 1.0f);
        // voxelValues[int((voxel.x - xStart)/resolution) + int((voxel.y - yStart)/resolution) * size + size * size * int((voxel.z - zStart)/resolution)] = minDist;
-        voxelValues[index(voxel.x, voxel.y, voxel.z)] = minDist;
+        int voxIdx = index(voxel.x, voxel.y, voxel.z);
+        highp float W = voxelWeights[voxIdx];
+        voxelValues[voxIdx] = (W*voxelValues[voxIdx] + weight * minDist)/(W + weight);
+        voxelWeights[voxIdx] = W + weight;
         //atomicCounterIncrement(closeVoxelsIdx);
     }
 }

@@ -14,6 +14,7 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
 {
     protected float[] _voxelValues = new float[size * size * size];
     protected List<Vector3> _seenVoxels = new();
+    protected float[] _voxelWeights = new float[size * size * size];
 
     public void UpdateWithTriangularMesh(Mesh triangularMeshInWorldCoords, Matrix4 cameraPose)
     {

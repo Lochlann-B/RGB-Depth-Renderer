@@ -102,7 +102,12 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.BufferData(BufferTarget.AtomicCounterBuffer, (IntPtr)(sizeof(uint)), IntPtr.Zero, BufferUsageHint.DynamicDraw);
         GL.BindBufferBase(BufferRangeTarget.AtomicCounterBuffer, 6, atomicCounterBufferID);
         GL.BindBuffer(BufferTarget.AtomicCounterBuffer, 0);
-        
+
+        int voxelWeightBufferSSBO = GL.GenBuffer();
+        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, voxelWeightBufferSSBO);
+        GL.BufferData(BufferTarget.ShaderStorageBuffer, sizeof(float)*_voxelWeights.Length, _voxelWeights, BufferUsageHint.StaticDraw);
+        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 7, voxelWeightBufferSSBO);
+        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
             
        //  GL.DispatchCompute(closeVoxelData.Length, 1, 1);
        //  //GL.MemoryBarrier(MemoryBarrierFlags.AtomicCounterBarrierBit);
@@ -125,7 +130,8 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         uint counterValue = 0;
         GL.GetNamedBufferSubData(seenVoxelsBufferSSBO, 0, Marshal.SizeOf<System.Numerics.Vector4>() * seenVoxels.Length, ref seenVoxels[0]);
         GL.GetNamedBufferSubData(voxelValuesBufferSSBO, 0, sizeof(float) * _voxelValues.Length, _voxelValues);
-       // GL.GetNamedBufferSubData(atomicCounterBufferID, 0, sizeof(int), ref counterValue);
+       GL.GetNamedBufferSubData(voxelWeightBufferSSBO, 0, sizeof(float)*_voxelWeights.Length, _voxelWeights);
+        // GL.GetNamedBufferSubData(atomicCounterBufferID, 0, sizeof(int), ref counterValue);
         //GL.CopyBufferSubData();
         //GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
         //GL.Flush();
@@ -428,10 +434,11 @@ int indexx(float px, float py, float pz) {
 
     private void blep(System.Numerics.Vector4[] closeVoxels, Vector3 cameraPos, BVHNode[] nodes, int numObjs, float[] positionArray, int[] indexArray)
     {
+        var watch = new Stopwatch();
         var seenVoxList = new HashSet<Vector3>();
         for (int idx = 0; idx < closeVoxels.Length; idx++)
         {
-
+            watch.Start();
             Vector3 voxel = new Vector3(closeVoxels[idx][0], closeVoxels[idx][1], closeVoxels[idx][2]);
 
             Vector3 raySource = cameraPos;
@@ -448,11 +455,15 @@ int indexx(float px, float py, float pz) {
 
             float minDist = 1 / 0f;
             int iters = -1;
-
+            watch.Stop();
+            //Console.WriteLine("Time for data setup: {0}ms", watch.ElapsedMilliseconds);
+            watch.Reset();
+            watch.Start();
+            var watch2 = new Stopwatch();
             while (stackPointer > 0)
             //for (int ble = 0; ble < 5*(numObjs - 1); ble++)
             {
-
+                watch2.Start();
                 if (stackPointer <= 0)
                 {
                     break;
@@ -468,9 +479,14 @@ int indexx(float px, float py, float pz) {
                 BVHNode node = nodes[index];
 
                 bool isLeaf = index >= numObjs - 1;
-
+                watch2.Stop();
+                //Console.WriteLine("Time taken to get node and stack info: {0}ms", watch2.ElapsedMilliseconds);
+                watch2.Reset();
+                watch2.Start();
                 if (isLeaf)
                 {
+                    var watch3 = new Stopwatch();
+                    watch3.Start();
                     Vector4 point = rayIntersectsTriangle(raySource, rayDirection, node, positionArray, indexArray);
                     if (point[3] != 0)
                     {
@@ -488,9 +504,13 @@ int indexx(float px, float py, float pz) {
                         var idxx = indexx(voxel[0], voxel[1], voxel[2]);
                         
                     }
+                    watch3.Stop();
+                   // Console.WriteLine("Time taken for leaf intersection: {0}ms", watch3.ElapsedMilliseconds);
                 }
                 else
                 {
+                    var watch3 = new Stopwatch();
+                    watch3.Start();
                     if (node.leftIdx != 0 && rayIntersectsAABB(raySource, rayDirection, nodes[node.leftIdx]))
                     {
                         stack[stackPointer] = (int)(node.leftIdx);
@@ -502,8 +522,17 @@ int indexx(float px, float py, float pz) {
                         stack[stackPointer] = (int)(node.rightIdx);
                         stackPointer++;
                     }
+                    
+                    watch3.Stop();
+                    //Console.WriteLine("Time taken for internal node intersection: {0}ms", watch3.ElapsedMilliseconds);
                 }
+                watch2.Stop();
+                //Console.WriteLine("Time taken to process node and do ray intersections: {0}ms", watch2.ElapsedMilliseconds);
+                watch2.Reset();
             }
+            watch.Stop();
+           // Console.WriteLine("Time taken for tree traversal: {0}ms", watch.ElapsedMilliseconds);
+            watch.Reset();
 
             seenVoxList.Add(voxel);
             if (minDist < float.PositiveInfinity)
