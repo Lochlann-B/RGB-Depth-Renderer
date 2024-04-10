@@ -26,7 +26,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         var yRanges = triangularMeshInWorldCoords.yRanges.ToArray();
         var zRanges = triangularMeshInWorldCoords.zRanges.ToArray();
 
-        var cameraPos = cameraPose.ExtractTranslation();
+        var cameraPos = -cameraPose.ExtractTranslation();
 
         var seenVoxels = new System.Numerics.Vector4[Size * Size * Size];
         
@@ -254,8 +254,9 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
 
             for (int j = 0; j < 3; j++)
             {
-                smallestCoords[j] = smallestCoords[j].FloorToInterval(Resolution);
-                largestCoords[j] = largestCoords[j].CeilToInterval(Resolution);
+                var offset = j == 0 ? XStart : j == 1 ? YStart : ZStart;
+                smallestCoords[j] = smallestCoords[j].FloorToInterval(Resolution, offset);
+                largestCoords[j] = largestCoords[j].CeilToInterval(Resolution, offset);
             }
 
             var resXm = smallestCoords[0] - 0*Resolution <= mesh.xRanges[0]
@@ -307,6 +308,10 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         var xInc = float.Min(xStart + Resolution * (Size - 2), v[0] + Resolution);
         var yInc = float.Min(yStart + Resolution * (Size - 2), v[1] + Resolution);
         var zInc = float.Min(zStart + Resolution * (Size - 2), v[2] + Resolution);
+        if (coord[2] < ZStart || zInc < ZStart)
+        {
+            var egg = 3;
+        }
         voxels.Add(new System.Numerics.Vector4(xInc, v[1], v[2],1f));
         voxels.Add(new System.Numerics.Vector4(xInc, v[1], zInc,1f));
         voxels.Add(new System.Numerics.Vector4(v[0], v[1], zInc,1f));

@@ -91,9 +91,9 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
     protected void AddNeighbouringVoxels(HashSet<Vector3> voxels, Vector3 coord)
     {
         var startVox = new Vector3(
-            coord[0].FloorToInterval(Resolution),
-            coord[1].FloorToInterval(Resolution),
-            coord[2].FloorToInterval(Resolution)
+            coord[0].FloorToInterval(Resolution, XStart),
+            coord[1].FloorToInterval(Resolution, YStart),
+            coord[2].FloorToInterval(Resolution, ZStart)
         );
 
         voxels.Add(startVox);
@@ -130,6 +130,10 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
             };
             foreach (var vertex in triangle.GetVerticesAsList())
             {
+                if (vertex[2] < ZStart)
+                {
+                    var ass = 3;
+                }
                 for (int j = 0; j < 3; j++)
                 {
                     smallestCoords[j] = float.Min(smallestCoords[j], vertex[j]);
@@ -139,8 +143,9 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
 
             for (int j = 0; j < 3; j++)
             {
-                smallestCoords[j] = smallestCoords[j].FloorToInterval(Resolution);
-                largestCoords[j] = largestCoords[j].CeilToInterval(Resolution);
+                var offset = j == 0 ? XStart : j == 1 ? YStart : ZStart;
+                smallestCoords[j] = smallestCoords[j].FloorToInterval(Resolution, offset);
+                largestCoords[j] = largestCoords[j].CeilToInterval(Resolution, offset);
             }
 
             for (var x = smallestCoords[0]; x <= largestCoords[0]; x += Resolution)

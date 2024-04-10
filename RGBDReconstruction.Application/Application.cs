@@ -75,54 +75,58 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         
         //GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
-        var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\locky\\OneDrive\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
-        Console.WriteLine("Tessellating depth map start...");
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        var bmesh = DepthTessellator.TessellateDepthArray(depthValues);
-        watch.Stop();
-        Console.WriteLine("Tessellation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
-        watch.Reset();
-        
-         Console.WriteLine("Instantiating voxel grid start...");
-         watch.Start();
-         //var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
-         var size = 200;
-         var resX = (bmesh.xRanges[1] - bmesh.xRanges[0]) / (size-2);
-         var resY = (bmesh.yRanges[1] - bmesh.yRanges[0]) / (size-2);
-         var resZ = (bmesh.zRanges[1] - bmesh.zRanges[0]) / (size-2);
-         var res = Math.Max(resX, Math.Max(resY, resZ));
-         
-         //var voxelGrid1 = new VoxelGridBVH(size, bmesh.xRanges[0], bmesh.yRanges[0], bmesh.zRanges[0], res);
-         var voxelGrid2 = new VoxelGridDeviceBVH(size, bmesh.xRanges[0], bmesh.yRanges[0], bmesh.zRanges[0], res);
-         watch.Stop();
-         Console.WriteLine("Voxel grid instantiation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
-         watch.Reset();
-         
-         // Console.WriteLine("Updating voxel grid regular with one mesh start...");
-         // watch.Start();
-         // voxelGrid1.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
-         // watch.Stop();
-         // Console.WriteLine("Voxel grid regular updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
-         // watch.Reset();
-         
-         Console.WriteLine("Updating voxel grid GPU with one mesh start...");
-         watch.Start();
-         voxelGrid2.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
-         watch.Stop();
-         Console.WriteLine("Voxel grid GPU updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
-         watch.Reset();
-        
-        // var contiguousMeshData = mesh.GetContiguousMeshData();
+        // var depthValues = RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile("C:\\Users\\locky\\OneDrive\\Desktop\\renders\\chain_collision\\depth\\frame_0001_cam_001.exr");
+        // Console.WriteLine("Tessellating depth map start...");
+        // var watch = System.Diagnostics.Stopwatch.StartNew();
+        // var bmesh = DepthTessellator.TessellateDepthArray(depthValues);
+        // watch.Stop();
+        // Console.WriteLine("Tessellation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        // watch.Reset();
+        //
+        //  Console.WriteLine("Instantiating voxel grid start...");
+        //  watch.Start();
+        //  //var voxelGrid = new VoxelGridBVH(800, -5.0f, -5.0f, 0f, 0.0125f);
+        //  var size = 200;
+        //  var resX = (bmesh.xRanges[1] - bmesh.xRanges[0]) / (size-2);
+        //  var resY = (bmesh.yRanges[1] - bmesh.yRanges[0]) / (size-2);
+        //  var resZ = (bmesh.zRanges[1] - bmesh.zRanges[0]) / (size-2);
+        //  var res = Math.Max(resX, Math.Max(resY, resZ));
+        //  
+        //  //var voxelGrid1 = new VoxelGridBVH(size, bmesh.xRanges[0], bmesh.yRanges[0], bmesh.zRanges[0], res);
+        //  var voxelGrid2 = new VoxelGridDeviceBVH(size, bmesh.xRanges[0], bmesh.yRanges[0], bmesh.zRanges[0], res);
+        //  watch.Stop();
+        //  Console.WriteLine("Voxel grid instantiation finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        //  watch.Reset();
+        //  
+        //  // Console.WriteLine("Updating voxel grid regular with one mesh start...");
+        //  // watch.Start();
+        //  // voxelGrid1.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
+        //  // watch.Stop();
+        //  // Console.WriteLine("Voxel grid regular updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        //  // watch.Reset();
+        //  
+        //  Console.WriteLine("Updating voxel grid GPU with one mesh start...");
+        //  watch.Start();
+        //  voxelGrid2.UpdateWithTriangularMesh(bmesh, Matrix4.Identity);
+        //  watch.Stop();
+        //  Console.WriteLine("Voxel grid GPU updating finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        //  watch.Reset();
+        //
+        // // var contiguousMeshData = mesh.GetContiguousMeshData();
+        //
+        // //var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
+        //
+        //  Console.WriteLine("Marching cubes start...");
+        //  watch.Start();
+        //  var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid2);
+        //  watch.Stop();
+        //  Console.WriteLine("Marching cubes finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
+        //  watch.Reset();
+        //  var contiguousMeshData = mesh.GetContiguousMeshData();
 
-        //var voxelGrid = TempVoxelGridUpdater.getExampleVoxelGrid();
-        
-         Console.WriteLine("Marching cubes start...");
-         watch.Start();
-         var mesh = MarchingCubes.GenerateMeshFromVoxelGrid(voxelGrid2);
-         watch.Stop();
-         Console.WriteLine("Marching cubes finished. Time: {0}ms\n", watch.ElapsedMilliseconds);
-         watch.Reset();
-         var contiguousMeshData = mesh.GetContiguousMeshData();
+        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 200);
+        var mesh = multiViewReconstructor.GetFrameGeometry(1);
+        var contiguousMeshData = mesh.GetContiguousMeshData();
         
         GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
         
@@ -164,7 +168,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         _model[0, 0] = 1f;
         _model[1, 1] = 1f;
         _model[2, 2] = -1f;
-        _view = Matrix4.CreateTranslation(0.0f, 0.0f, -3.0f);
+        _view = Matrix4.CreateTranslation(0.0f, 0.0f, -0.0f);
         _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45.0f), Size.X / (float)Size.Y, 0.1f, 100.0f);
         _lightingShader.SetUniformMatrix4f("model", ref _model);
         _lightingShader.SetUniformMatrix4f("view", ref _view);
@@ -191,7 +195,7 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         //_shader.SetUniformMatrix4f("projection", ref _projection);
 
         //_diffuseMap = new Texture("./resources/container2.png");
-        _diffuseMap = new Texture("./resources/frame_0001_cam_001.png");
+        _diffuseMap = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
         _diffuseMap.Use(TextureUnit.Texture0);
 
         //_specularMap = new Texture("./resources/container2_specular.png");

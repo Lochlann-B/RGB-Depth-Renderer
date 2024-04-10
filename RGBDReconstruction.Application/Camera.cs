@@ -26,7 +26,7 @@ public class Camera
 
     public Camera()
     {
-        _position = new Vector3(0.0f, 0.0f, 3.0f);
+        _position = new Vector3(0.0f, 0.0f, 0.0f);
         _target = new Vector3();
         _front = new Vector3(0.0f, 0.0f, 1.0f);
         _up = new Vector3(0.0f, 1.0f, 0.0f);

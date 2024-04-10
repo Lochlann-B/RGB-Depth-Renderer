@@ -16,42 +16,18 @@ public class MultiViewVoxelGridReconstruction
         switch (sceneNo)
         {
             case 0:
-                _viewProcessor = new MultiViewProcessor("BLEP CHANGE ME");
+                _viewProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\chain_collision");
                 break;
         }
-    }
-
-    private String GetDepthMapFileName(int frame, int cam)
-    {
-        var numFrameDigits = (int) Math.Ceiling(Math.Log10(frame));
-        var numCamDigits = (int)Math.Ceiling(Math.Log10(cam));
-        
-        // max is 4 digits
-        var frameStr = "";
-        var camStr = "";
-        for (int f = 0; f < (4 - numFrameDigits); f++)
-        {
-            frameStr += "0";
-        }
-
-        frameStr += numFrameDigits.ToString();
-        
-        for (int c = 0; c < (4 - numCamDigits); c++)
-        {
-            camStr += "0";
-        }
-
-        camStr += numCamDigits.ToString();
-
-        return "frame_" + frameStr + "_cam_" + camStr + ".exr";
     }
 
     public Mesh GetFrameGeometry(int frameNo)
     {
         // 0. tessellate each depth map to get voxel grid data
-        int numCams = 6; // TODO: obtain from scene file with camera transformation data
         var depthMapList = new List<float[,]>();
         var tessellatedDepthMapList = new List<Mesh>();
+        var camPoseList = _viewProcessor.GetCameraPoseInformation();
+        var numCams = camPoseList.Count;
 
         float xMin = float.PositiveInfinity;
         float xMax = float.NegativeInfinity;
@@ -61,18 +37,23 @@ public class MultiViewVoxelGridReconstruction
         float zMax = float.NegativeInfinity;
         
         
-        for (int i = 1; i <= numCams; i++)
+        for (int i = 6; i <= numCams; i++)
         {
-            depthMapList.Add(RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile(GetDepthMapFileName(frameNo, i)));
-            var mesh = DepthTessellator.TessellateDepthArray(depthMapList[i-1]);
+            // if (i > 2)
+            // {
+            //     continue;
+            // }
+            
+            depthMapList.Add(_viewProcessor.GetDepthMap(frameNo, i-5));
+            var mesh = DepthTessellator.TessellateDepthArray(depthMapList[i-6], camPoseList[i-6]);
             tessellatedDepthMapList.Add(mesh);
             
             xMin = Math.Min(mesh.xRanges[0], xMin);
-            xMax = Math.Min(mesh.xRanges[1], xMax);
+            xMax = Math.Max(mesh.xRanges[1], xMax);
             yMin = Math.Min(mesh.yRanges[0], yMin);
-            yMax = Math.Min(mesh.yRanges[1], yMax);
+            yMax = Math.Max(mesh.yRanges[1], yMax);
             zMin = Math.Min(mesh.zRanges[0], zMin);
-            zMax = Math.Min(mesh.zRanges[1], zMax);
+            zMax = Math.Max(mesh.zRanges[1], zMax);
         }
         
         var resX = (xMax - xMin) / (gridSize-2);
@@ -86,10 +67,14 @@ public class MultiViewVoxelGridReconstruction
         // 2. for each camera:
         // b. get camera transformation data
         // c. update voxel grid
-        for (int j = 0; j < numCams; j++)
+        for (int j = 5; j < numCams; j++)
         {
+            // if (j > 1)
+            // {
+            //     continue;
+            // }
             // TODO: Get camera pose from info
-            currentVoxGrid.UpdateWithTriangularMesh(tessellatedDepthMapList[j], Matrix4.Identity);
+            currentVoxGrid.UpdateWithTriangularMesh(tessellatedDepthMapList[j-5], camPoseList[j-5]);
         }
 
         // 3. do marching cubes and return

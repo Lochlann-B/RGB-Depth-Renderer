@@ -26,6 +26,8 @@ uniform int height;
 uniform int xres;
 uniform int yres;
 
+uniform mat4 transformationMatrix;
+
 float getFocal(float focalLength, float sensorSize, float imgSize) {
     return focalLength * (imgSize / sensorSize);
 }
@@ -73,6 +75,26 @@ void writeTriangleData(vec3 v1, vec3 v2, vec3 v3, ivec3 nv1, ivec3 nv2, ivec3 nv
     }
 }
 
+float getProjectionCorrection(vec3 v1, vec3 v2, vec3 v3) {
+    float zThreshold = 0.004f*yres;
+    if (abs(v1.z - v2.z) > zThreshold || abs(v2.z - v3.z) > zThreshold || abs(v1.z - v3.z) > zThreshold) {
+        // Assume that the triangle should be flat
+        vec3 v1m = v1;
+        vec3 v2m = vec3(v2.x, v1.y, v2.z);
+        vec3 v3m = vec3(v3.x, v1.y, v3.z);
+        
+        // Calculate the angle between viewing direction and surface (viewing direction given by (0, 0, 1) since are already working in camera view space)
+        vec3 normal = normalize(normal(v1m, v2m, v3m));
+        float adjCoeff = pow(abs(normal.z), 1/4f); // dot(normal, vec3(0,0,1))
+        
+        // okay chatgpt's idea turned out to be a bit shit... will try making all the y coordinates the same manually as they should be by finding the pair with the smallest diff in y, and subtracting the diff within this pair from the larger coord and third coord
+        
+        return adjCoeff;
+    }
+    
+    return 1f;
+}
+
 void main()
 {
     
@@ -114,19 +136,59 @@ void main()
 
     int cx = (maxX + 1) / 2;
     int cy = (maxY + 1) / 2;
+    
+    int cenx = width/2;
+    int ceny = height/2;
     float fx = getFocal(50f, 36f, 1920f);
-    float fy = getFocal(28.125f, 36*(9/16f), 1080f);
+//    float fy = getFocal(28.125f, 36*(9/16f), 1080f);
+    float fy = getFocal(50f, 36f, 1080f);
 
     // Perform tessellation based on depth value
     // Calculate index, position, and texture coordinate for this pixel
 
     // Example: Calculating index
     //uint index = (storePos.y * width + storePos.x)*4;
+    
+    mat4 rotation = transpose(transformationMatrix);
+    vec4 translation = vec4(rotation[3][0], rotation[3][1], rotation[3][2], 0f);
+    rotation[3][0] = 0f;
+    rotation[3][1] = 0f;
+    rotation[3][2] = 0f;
+    
+    //float canvDist = 50/36f;
 
-    vec3 v1 = vec3( depths.x*((x-cx)/fx), depths.x*((y-cy)/fy), depths.x);
-    vec3 v2 = vec3( depths.y*((x-cx)/fx), depths.y*((y+yres-cy)/fy), depths.y);
-    vec3 v3 = vec3( depths.z*((x+xres-cx)/fx), depths.z*((y+yres-cy)/fy), depths.z );
-    vec3 v4 = vec3( depths.w*((x+xres-cx)/fx), depths.w*((y-cy)/fy), depths.w );
+//    vec3 v1 = (rotation * (translation + vec4( (depths.x + canvDist)*((x-cx)/fx), (depths.x + canvDist)*((y-cy)/fy), depths.x + canvDist, 1.0))).xyz;
+//    vec3 v2 = (rotation * (translation + vec4( (depths.y + canvDist)*((x-cx)/fx), (depths.y + canvDist)*((y+yres-cy)/fy), depths.y + canvDist, 1.0))).xyz;
+//    vec3 v3 = (rotation * (translation + vec4( (depths.z + canvDist)*((x+xres-cx)/fx), (depths.z + canvDist)*((y+yres-cy)/fy), depths.z + canvDist, 1.0 ))).xyz;
+//    vec3 v4 = (rotation * (translation + vec4( (depths.w + canvDist)*((x+xres-cx)/fx), (depths.w + canvDist)*((y-cy)/fy), depths.w + canvDist, 1.0 ))).xyz;
+    
+//    vec3 v1 = (rotation * (translation + vec4( (depths.x)*((x-cx)/fx), (depths.x)*((y-cy)/fy), depths.x, 1.0))).xyz;
+//    vec3 v2 = (rotation * (translation + vec4( (depths.y)*((x-cx)/fx), (depths.y)*((y+yres-cy)/fy), depths.y, 1.0))).xyz;
+//    vec3 v3 = (rotation * (translation + vec4( (depths.z)*((x+xres-cx)/fx), (depths.z)*((y+yres-cy)/fy), depths.z, 1.0 ))).xyz;
+//    vec3 v4 = (rotation * (translation + vec4( (depths.w)*((x+xres-cx)/fx), (depths.w)*((y-cy)/fy), depths.w, 1.0 ))).xyz;
+
+    vec3 v1 = (rotation * (translation + vec4( (depths.x)*((x-cenx)/fx), -(depths.x)*((height-y-ceny)/fy), depths.x, 1.0))).xyz;
+    vec3 v2 = (rotation * (translation + vec4( (depths.y)*((x-cenx)/fx), -(depths.y)*((height-y-yres-ceny)/fy), depths.y, 1.0))).xyz;
+    vec3 v3 = (rotation * (translation + vec4( (depths.z)*((x+xres-cenx)/fx), -(depths.z)*((height-y-yres-ceny)/fy), depths.z, 1.0 ))).xyz;
+    vec3 v4 = (rotation * (translation + vec4( (depths.w)*((x+xres-cenx)/fx), -(depths.w)*((height-y-ceny)/fy), depths.w, 1.0 ))).xyz;
+    
+    float z1Adj = getProjectionCorrection(v1, v2, v3);
+    float z2Adj = getProjectionCorrection(v1, v3, v4);
+    float zAvAdj = (z1Adj + z2Adj)/2f;
+
+    v1.y = -(zAvAdj*depths.x)*((height-y-yres-ceny)/fy);
+    v2.y = -(z1Adj*depths.y)*((height-y-yres-ceny)/fy);
+    v3.y = -(zAvAdj*depths.z)*((height-y-yres-ceny)/fy);
+    v4.y = -(z2Adj*depths.w)*((height-y-yres-ceny)/fy);
+//    v2 = (rotation * (translation + vec4( (depths.y)*((x-cenx)/fx), -(z1Adj*depths.y)*((height-y-yres-ceny)/fy), depths.y, 1.0))).xyz;
+//    v3 = (rotation * (translation + vec4( (depths.z)*((x+xres-cenx)/fx), -(zAvAdj*depths.z)*((height-y-yres-ceny)/fy), depths.z, 1.0 ))).xyz;
+//    v4 = (rotation * (translation + vec4( (depths.w)*((x+xres-cenx)/fx), -(z2Adj*depths.w)*((height-y-ceny)/fy), depths.w, 1.0 ))).xyz;
+    
+
+//    vec3 v1 = (transpose(transformationMatrix) * vec4( depths.x*((x-cx)/fx), depths.x*((y-cy)/fy), depths.x, 1.0)).xyz;
+//    vec3 v2 = (transpose(transformationMatrix) * vec4( depths.y*((x-cx)/fx), depths.y*((y+yres-cy)/fy), depths.y, 1.0)).xyz;
+//    vec3 v3 = (transpose(transformationMatrix) * vec4( depths.z*((x+xres-cx)/fx), depths.z*((y+yres-cy)/fy), depths.z, 1.0 )).xyz;
+//    vec3 v4 = (transpose(transformationMatrix) * vec4( depths.w*((x+xres-cx)/fx), depths.w*((y-cy)/fy), depths.w, 1.0 )).xyz;
 
 //    vec3 v1 = vec3( x, y, depths.x);
 //    vec3 v2 = vec3( x, y+yres, depths.y);
@@ -148,8 +210,12 @@ void main()
     ivec3 nv4 = ivec3( x+adjXRes, y, 1 );
     
     // Triangle 1 - vertices 1, 2, 3
-    writeTriangleData(v1, v2, v3, nv1, nv2, nv3, 0, fx, fy, width, height, cx, cy, x, y);
+    if (z1Adj > 1e-4) {
+        writeTriangleData(v1, v2, v3, nv1, nv2, nv3, 0, fx, fy, width, height, cx, cy, x, y);
+    }
     
     // Triangle 2 - vertices 1, 3, 4
-    writeTriangleData(v1, v3, v4, nv1, nv3, nv4, 3, fx, fy, width, height, cx, cy, x, y);
+    if (z2Adj > 1e-4) {
+        writeTriangleData(v1, v3, v4, nv1, nv3, nv4, 3, fx, fy, width, height, cx, cy, x, y);
+    }
 }

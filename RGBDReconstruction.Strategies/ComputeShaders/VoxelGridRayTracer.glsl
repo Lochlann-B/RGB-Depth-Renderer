@@ -267,7 +267,7 @@ void main() {
         if (isLeaf) {
             Triangle triangle = getTriangleFromNode(node);
             vec4 point = rayIntersectsTriangle(raySource, rayDirection, triangle);
-            float currWeight = abs(dot(getNormal(triangle.v1, triangle.v2, triangle.v3), rayDirection));
+            float currWeight = 1f; //abs(dot(getNormal(triangle.v1, triangle.v2, triangle.v3), rayDirection));
             if (point.w != 0) {
                 vec3 nPoint = point.xyz;
                 highp float dist = distance(nPoint, voxel);

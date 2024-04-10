@@ -217,7 +217,7 @@ public class DepthTessellator
         return new Mesh(meshLayout, new List<float>(positions), new List<float>(normals), new List<float>(texCoords));
     }
 
-    public static Mesh TessellateDepthArray(float[,] depthMap)
+    public static Mesh TessellateDepthArray(float[,] depthMap, Matrix4 invCameraPose)
     {
         int yres = 8;
         int xres = 8;
@@ -242,6 +242,7 @@ public class DepthTessellator
 
         computeShader.SetUniformInt("xres", xres);
         computeShader.SetUniformInt("yres", yres);
+        computeShader.SetUniformMatrix4f("transformationMatrix", ref invCameraPose);
 
         // Generate buffer handles
         int indexBufferHandle = GL.GenBuffer();
