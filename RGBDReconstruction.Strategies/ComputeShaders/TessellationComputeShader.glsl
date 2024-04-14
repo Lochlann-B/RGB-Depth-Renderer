@@ -28,6 +28,12 @@ uniform int yres;
 
 uniform mat4 transformationMatrix;
 
+struct Triangle {
+    vec3 v1;
+    vec3 v2;
+    vec3 v3;
+};
+
 float getFocal(float focalLength, float sensorSize, float imgSize) {
     return focalLength * (imgSize / sensorSize);
 }
@@ -75,7 +81,7 @@ void writeTriangleData(vec3 v1, vec3 v2, vec3 v3, ivec3 nv1, ivec3 nv2, ivec3 nv
     }
 }
 
-float getProjectionCorrection(vec3 v1, vec3 v2, vec3 v3) {
+Triangle getProjectionCorrection(vec3 v1, vec3 v2, vec3 v3) {
     float zThreshold = 0.004f*yres;
     if (abs(v1.z - v2.z) > zThreshold || abs(v2.z - v3.z) > zThreshold || abs(v1.z - v3.z) > zThreshold) {
         // Assume that the triangle should be flat
@@ -84,15 +90,55 @@ float getProjectionCorrection(vec3 v1, vec3 v2, vec3 v3) {
         vec3 v3m = vec3(v3.x, v1.y, v3.z);
         
         // Calculate the angle between viewing direction and surface (viewing direction given by (0, 0, 1) since are already working in camera view space)
-        vec3 normal = normalize(normal(v1m, v2m, v3m));
-        float adjCoeff = pow(abs(normal.z), 1/4f); // dot(normal, vec3(0,0,1))
+        vec3 n = normalize(normal(v1m, v2m, v3m));
+        float adjCoeff = pow(abs(n.z), 1/4f); // dot(normal, vec3(0,0,1))
         
         // okay chatgpt's idea turned out to be a bit shit... will try making all the y coordinates the same manually as they should be by finding the pair with the smallest diff in y, and subtracting the diff within this pair from the larger coord and third coord
         
-        return adjCoeff;
+        float nDiff1 = dot((v1 - v2), n);
+        float nDiff2 = dot((v2 - v3), n);
+        float nDiff3 = dot((v3 - v1), n);
+
+        float v1Comp = dot(v1, n);
+        float v2Comp = dot(v2, n);
+        float v3Comp = dot(v3, n);
+        
+        if (nDiff1 <= nDiff2 && nDiff1 <= nDiff3) {
+            // If nDiff1 has the smallest diff, then either v3 has largest uncorrected values or both v1 and v2 do. In either case, subtract from larger vertices
+            if (v3Comp > v1Comp || v3Comp > v2Comp) {
+                v3 -= v3Comp*(v3 - v1);
+            } else {
+                v1 -= v1Comp*(v3 - v1);
+                v2 -= v2Comp*(v2 - v3);
+            }
+        } else if (nDiff2 <= nDiff1 && nDiff2 <= nDiff3) {
+            if (v1Comp > v2Comp || v1Comp > v3Comp) {
+                v1 -= v1Comp*(v1 - v2);
+            } else {
+                v3 -= v3Comp*(v3 - v1);
+                v2 -= v2Comp*(v1 - v2);
+            }
+        } else if (nDiff3 <= nDiff1 && nDiff3 <= nDiff2) {
+            if (v3Comp > v2Comp || v3Comp > v1Comp) {
+                v2 -= v2Comp*(v2 - v3);
+            } else {
+                v1 -= v1Comp*(v1 - v2);
+                v3 -= v3Comp*(v2 - v2);
+            }
+        }
+
+
+        Triangle adjTri;
+        adjTri.v1 = v1;
+        adjTri.v3 = v3;
+        adjTri.v2 = v2;
     }
     
-    return 1f;
+    Triangle tri;
+    tri.v3 = v3;
+    tri.v2 = v2;
+    tri.v1 = v1;
+    return tri;
 }
 
 void main()
@@ -172,14 +218,23 @@ void main()
     vec3 v3 = (rotation * (translation + vec4( (depths.z)*((x+xres-cenx)/fx), -(depths.z)*((height-y-yres-ceny)/fy), depths.z, 1.0 ))).xyz;
     vec3 v4 = (rotation * (translation + vec4( (depths.w)*((x+xres-cenx)/fx), -(depths.w)*((height-y-ceny)/fy), depths.w, 1.0 ))).xyz;
     
-    float z1Adj = getProjectionCorrection(v1, v2, v3);
-    float z2Adj = getProjectionCorrection(v1, v3, v4);
-    float zAvAdj = (z1Adj + z2Adj)/2f;
+    
+//    Triangle adjTri1 = getProjectionCorrection(v1, v2, v3);
+//    Triangle adjTri2 = getProjectionCorrection(v1, v3, v4);
+//    
+//    v1 = adjTri1.v1;
+//    v2 = adjTri2.v2;
+//    v3 = adjTri2.v2;
+//    v4 = adjTri3.v3;
+    
+//    float z1Adj = getProjectionCorrection(v1, v2, v3);
+//    float z2Adj = getProjectionCorrection(v1, v3, v4);
+//    float zAvAdj = (z1Adj + z2Adj)/2f;
 
-    v1.y = -(zAvAdj*depths.x)*((height-y-yres-ceny)/fy);
-    v2.y = -(z1Adj*depths.y)*((height-y-yres-ceny)/fy);
-    v3.y = -(zAvAdj*depths.z)*((height-y-yres-ceny)/fy);
-    v4.y = -(z2Adj*depths.w)*((height-y-yres-ceny)/fy);
+//    v1.y = -(zAvAdj*depths.x)*((height-y-yres-ceny)/fy);
+//    v2.y = -(z1Adj*depths.y)*((height-y-yres-ceny)/fy);
+//    v3.y = -(zAvAdj*depths.z)*((height-y-yres-ceny)/fy);
+//    v4.y = -(z2Adj*depths.w)*((height-y-yres-ceny)/fy);
 //    v2 = (rotation * (translation + vec4( (depths.y)*((x-cenx)/fx), -(z1Adj*depths.y)*((height-y-yres-ceny)/fy), depths.y, 1.0))).xyz;
 //    v3 = (rotation * (translation + vec4( (depths.z)*((x+xres-cenx)/fx), -(zAvAdj*depths.z)*((height-y-yres-ceny)/fy), depths.z, 1.0 ))).xyz;
 //    v4 = (rotation * (translation + vec4( (depths.w)*((x+xres-cenx)/fx), -(z2Adj*depths.w)*((height-y-ceny)/fy), depths.w, 1.0 ))).xyz;
@@ -210,12 +265,12 @@ void main()
     ivec3 nv4 = ivec3( x+adjXRes, y, 1 );
     
     // Triangle 1 - vertices 1, 2, 3
-    if (z1Adj > 1e-4) {
+//    if (z1Adj > 1e-4) {
         writeTriangleData(v1, v2, v3, nv1, nv2, nv3, 0, fx, fy, width, height, cx, cy, x, y);
-    }
+//    }
     
     // Triangle 2 - vertices 1, 3, 4
-    if (z2Adj > 1e-4) {
+//    if (z2Adj > 1e-4) {
         writeTriangleData(v1, v3, v4, nv1, nv3, nv4, 3, fx, fy, width, height, cx, cy, x, y);
-    }
+//    }
 }
