@@ -14,37 +14,6 @@ public class Application(int width, int height, string title) : GameWindow(GameW
     new NativeWindowSettings() { ClientSize = (width, height), Title = title, Flags = ContextFlags.ForwardCompatible })
 {
 
-    // private int[] _indexArray;
-    //
-    // private Vector3 _lightPos;
-    //
-    // private int _vertexBufferObject;
-    // private int _vertexArrayObject;
-    // private int _elementBufferObject;
-    //
-    // private int _lightVertexArrayObject;
-    //
-    // private int _width;
-    // private int _height;
-    //
-    // private Camera _camera;
-    //
-    // private Shader _shader;
-    // private Shader _lightingShader;
-    //
-    // private Matrix4 _model;
-    // private Matrix4 _view;
-    // private Matrix4 _projection;
-    //
-    // private Matrix4 _lightModel;
-    //
-    // private Vector2 _prevMousePos;
-    // private float _sensitivity;
-    // private bool firstMove = true;
-    //
-    // private Texture _diffuseMap;
-    // private Texture _specularMap;
-
     private IReconstructionApplication app;
 
     protected override void OnLoad()
@@ -56,7 +25,8 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         CursorState = CursorState.Grabbed;
         Cursor = MouseCursor.Empty;
 
-        app = new BVHReconstruction();
+        //app = new BVHReconstruction();
+        app = new RaycastReconstruction();
         
         app.Init(Size.X, Size.Y);
     }

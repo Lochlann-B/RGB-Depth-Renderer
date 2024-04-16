@@ -26,12 +26,12 @@ public class Camera
 
     public Camera()
     {
-        _position = new Vector3(0.0f, 0.0f, 0.0f);
+        _position = new Vector3(0.0f, 0.0f, 3.0f);
         _target = new Vector3();
-        _front = new Vector3(0.0f, 0.0f, 1.0f);
+        _front = new Vector3(0.0f, 0.0f, -1.0f);
         _up = new Vector3(0.0f, 1.0f, 0.0f);
         _right = new Vector3(1.0f, 0.0f, 0.0f);
-        _speed = 1.5f;
+        _speed = -1.5f;
     }
 
     public Matrix4 LookAt => Matrix4.LookAt(_position, _position + _front, _up);
