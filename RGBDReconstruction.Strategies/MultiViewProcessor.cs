@@ -1,13 +1,117 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using OpenTK.Mathematics;
 using RGBDReconstruction.Strategies;
 using System.IO;
+using StbImageSharp;
 
 namespace RGBDReconstruction.Application;
 
 public class MultiViewProcessor(String directoryPath)
 {
     public String DirectoryPath { get; set; } = directoryPath;
+
+    private ConcurrentPriorityQueue<int, byte[]> _RGBFrameData = new();
+    private ConcurrentPriorityQueue<int, float[,]> _depthFrameData = new();
+
+    private SemaphoreSlim _semaphoreRGB = new(6);
+    private SemaphoreSlim _semaphoreDepth = new(6);
+
+    private int _maxFrameDataSize = 600;
+
+    private int _currentFrameRGB = 1;
+    private int _currentFrameDepth = 1;
+    private int _nextFrameToReturn = 1;
+
+    public (byte[], float[,])? GetNextAvailableFrame()
+    {
+        if ((_RGBFrameData.Count < 200 || _depthFrameData.Count < 200) && _nextFrameToReturn == 1)
+        {
+            return null;
+        }
+
+        if (!_RGBFrameData.TryPeek(out var _) || !_depthFrameData.TryPeek(out var _)) return null;
+
+        _RGBFrameData.TryPeek(out var rgb);
+        if (rgb.Key != _nextFrameToReturn) return null;
+
+        _depthFrameData.TryPeek(out var depth);
+        if (depth.Key != _nextFrameToReturn) return null;
+
+        _nextFrameToReturn++;
+        _RGBFrameData.TryDequeue(out var rgbData);
+        _depthFrameData.TryDequeue(out var depthData);
+        return (rgbData.Value, depthData.Value);
+    }
+
+    public async Task LoadFramesDepthAsync()
+    {
+        try
+        {
+            while (true)
+            {
+                if (_depthFrameData.Count > _maxFrameDataSize || _semaphoreDepth.CurrentCount == 0)
+                {
+                    //await Task.Delay(5);
+                    continue;
+                }
+
+                await _semaphoreDepth.WaitAsync();
+                
+                // uses camera 1
+                int frameIdx = Interlocked.Increment(ref _currentFrameDepth) - 1;
+                Task.Run(() => LoadFrameDepthAsync(frameIdx, GetDepthMapFileName(frameIdx, 1))).ContinueWith(t => _semaphoreDepth.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
+                //_currentFrameDepth++;
+            }
+        } catch(Exception e)
+        {
+            Console.WriteLine("Error or all depth frames loaded: " + e);
+        } 
+    }
+    
+    public async Task LoadFramesRGBAsync()
+    {
+        StbImage.stbi_set_flip_vertically_on_load(1);
+        try
+        {
+            while (true)
+            {
+                if (_RGBFrameData.Count > _maxFrameDataSize || _semaphoreRGB.CurrentCount == 0)
+                {
+                    //await Task.Delay(5);
+                    continue;
+                }
+
+                await _semaphoreRGB.WaitAsync();
+                
+                // uses camera 1
+                int frameIdx = Interlocked.Increment(ref _currentFrameRGB) - 1;
+                Task.Run(() => LoadFrameRGBAsync(frameIdx, GetPNGFileName(frameIdx, 1))).ContinueWith(t => _semaphoreRGB.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
+                //_currentFrameRGB++;
+            }
+        } catch(Exception e)
+        {
+            Console.WriteLine("Error or all RGB frames loaded: " + e);
+        }
+    }
+
+    private async Task LoadFrameRGBAsync(int frameNo, string imgPath)
+    {
+        await Task.Run(() =>
+        {
+            using var img = File.OpenRead(imgPath);
+            _RGBFrameData.Enqueue(frameNo, ImageResult.FromStream(img, ColorComponents.RedGreenBlueAlpha).Data);
+        });
+    }
+
+    private async Task LoadFrameDepthAsync(int frameNo, string imgPath)
+    {
+        await Task.Run(() =>
+        {
+            // uses camera 1
+            _depthFrameData.Enqueue(frameNo, GetDepthMap(frameNo, 1));
+        });
+    }
 
     public List<Matrix4> GetCameraPoseInformation()
     {
@@ -114,7 +218,17 @@ public class MultiViewProcessor(String directoryPath)
         return RGBDepthPoseInputProcessor.GetCameraLocalDepthMapFromExrFile(GetDepthMapFileName(frame, camera));
     }
     
-    private String GetDepthMapFileName(int frame, int cam)
+    public String GetDepthMapFileName(int frame, int cam)
+    {
+        return GetFileName(frame, cam, ".exr", @"\depth\");
+    }
+
+    public String GetPNGFileName(int frame, int cam)
+    {
+        return GetFileName(frame, cam, ".png", @"\rgb\");
+    }
+
+    private String GetFileName(int frame, int cam, String extension, String path)
     {
         var numFrameDigits = (int)Math.Floor(Math.Log10(frame)) + 1;
         var numCamDigits = (int)Math.Floor(Math.Log10(cam)) + 1;
@@ -136,6 +250,6 @@ public class MultiViewProcessor(String directoryPath)
 
         camStr += cam.ToString();
 
-        return DirectoryPath + @"\depth\" + "frame_" + frameStr + "_cam_" + camStr + ".exr";
+        return DirectoryPath + path + "frame_" + frameStr + "_cam_" + camStr + extension;
     }
 }

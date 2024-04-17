@@ -6,7 +6,10 @@ uniform vec2 screenSize;
 
 uniform mat3 intrinsicMatrix;
 
-uniform sampler2D depthMap;
+
+layout(binding = 0) uniform sampler2D depthMap;
+layout(binding = 1) uniform sampler2D rgbMap;
+
 uniform mat4 depthMapCamPose;
 
 out vec4 fragColor;
@@ -90,7 +93,9 @@ vec4 raycast(vec3 worldRayStart, vec3 worldRayDirection) {
     float outofboundsCol = 0;
     for (int i = 0; i < maxIters; i++) {
         if (abs(s) < 0.02f) {
-            return vec4(1f,outofboundsCol,0, 1.0f);
+            vec4 pixelColour = texture(rgbMap, coords/vec2(1920, 1080));
+            return pixelColour;
+//            return vec4(1f,outofboundsCol,0, 1.0f);
         } else {
             if (i > 0) {
                 s = clamp(s, -0.02f, 0.02f);
@@ -106,7 +111,7 @@ vec4 raycast(vec3 worldRayStart, vec3 worldRayDirection) {
             //coords.y = 1080 - coords.y;
 
             if (coords.x < 0 || coords.y < 0 || coords.x >= 1920 || coords.y >= 1080) {
-                outofboundsCol = 1f;
+                //outofboundsCol = 1f;
                 continue;
                 //return vec4(0, 1, 0, 0);
             }
