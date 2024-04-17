@@ -42,16 +42,22 @@ public class RaycastReconstruction : IReconstructionApplication
     ];
     
     protected MultiViewProcessor _viewProcessor;
-    private float[,] _depthMap;
+    private float[,] _depthMap1;
+    private float[,] _depthMap2;
 
     // private int _depthBufferTexture;
-    private Texture _depthBufferTexture;
-    private Texture _rgbTexture;
-    private Matrix4 _depthMapCamPose;
+    private Texture _depthBufferTexture1;
+    private Texture _depthBufferTexture2;
+    private Texture _rgbTexture1;
+    private Texture _rgbTexture2;
+    private Matrix4 _depthMapCamPose1;
+    private Matrix4 _depthMapCamPose2;
 
     private int _frame = 1;
 
     private double _elapsedTime = 0d;
+
+    private List<Matrix4> _depthCamPoses;
 
     public void Init(int windowWidth, int windowHeight)
     {
@@ -109,17 +115,30 @@ public class RaycastReconstruction : IReconstructionApplication
         Task.Run(() => _viewProcessor.LoadFramesRGBAsync());
         Task.Run(() => _viewProcessor.LoadFramesDepthAsync());
 
+        _depthCamPoses = _viewProcessor.GetCameraPoseInformation();
+        var camPose = _depthCamPoses[0];
+        _depthMapCamPose1 = camPose;
+        _depthMapCamPose1.Transpose();
+        _raycastShader.SetUniformMatrix4f("depthMapCamPoses[0]", ref _depthMapCamPose1);
         
-        var camPose = _viewProcessor.GetCameraPoseInformation()[0];
-        _depthMapCamPose = camPose.Inverted();
-        _raycastShader.SetUniformMatrix4f("depthMapCamPose", ref _depthMapCamPose);
+        var camPose2 = _depthCamPoses[1];
+        _depthMapCamPose2 = camPose2;
+        _depthMapCamPose2.Transpose();
+        _raycastShader.SetUniformMatrix4f("depthMapCamPoses[1]", ref _depthMapCamPose2);
         
-        _depthMap = _viewProcessor.GetDepthMap(1, 1);
-        _depthBufferTexture = new Texture(_depthMap);
-        _depthBufferTexture.Use(TextureUnit.Texture0);
+        _depthMap1 = _viewProcessor.GetDepthMap(1, 1);
+        _depthBufferTexture1 = new Texture(_depthMap1);
+        _depthBufferTexture1.Use(TextureUnit.Texture0);
         
-        _rgbTexture = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
-        _rgbTexture.Use(TextureUnit.Texture1);
+        _depthMap2 = _viewProcessor.GetDepthMap(1, 2);
+        _depthBufferTexture2 = new Texture(_depthMap2);
+        _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
+        
+        _rgbTexture1 = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
+        _rgbTexture1.Use(TextureUnit.Texture0 + 1);
+        
+        _rgbTexture2 = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_002.png");
+        _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);
 
         
 
@@ -246,37 +265,46 @@ public class RaycastReconstruction : IReconstructionApplication
         // _depthBufferTexture = new Texture(_depthMap);
         // _rgbTexture = new Texture(_viewProcessor.GetPNGFileName(_frame, 1));
 
-        _elapsedTime += args.Time;
-        if (_elapsedTime >= 1 / 60d)
-        {
-            var nextFrameData = _viewProcessor.GetNextAvailableFrame();
-            if (nextFrameData is not null)
-            {
-                var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-                GL.WaitSync(fence, WaitSyncFlags.None, -1);
-                GL.DeleteSync(fence);
-                
-                var rgbData = nextFrameData.Value.Item1;
-                var depthData = nextFrameData.Value.Item2;
-                _rgbTexture.UpdateWithByteData(rgbData);
-                _depthBufferTexture.UpdateWithFloatArrayData(depthData);
-                
-                var fence2 = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-                GL.WaitSync(fence2, WaitSyncFlags.None, -1);
-                GL.DeleteSync(fence2);
-            }
-
-            _elapsedTime = 0d;
-        }
+        // _elapsedTime += args.Time;
+        // if (_elapsedTime >= 1 / 60d)
+        // {
+        //     var nextFrameData = _viewProcessor.GetNextAvailableFrame();
+        //     if (nextFrameData is not null)
+        //     {
+        //         _depthMapCamPose2 = _depthCamPoses[1];
+        //         _depthMapCamPose2.Transpose();
+        //         var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+        //         GL.WaitSync(fence, WaitSyncFlags.None, -1);
+        //         GL.DeleteSync(fence);
+        //         
+        //         var rgbData = nextFrameData.Value.Item1;
+        //         var depthData = nextFrameData.Value.Item2;
+        //         _rgbTexture2.UpdateWithByteData(rgbData);
+        //         _depthBufferTexture2.UpdateWithFloatArrayData(depthData);
+        //         
+        //         var fence2 = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
+        //         GL.WaitSync(fence2, WaitSyncFlags.None, -1);
+        //         GL.DeleteSync(fence2);
+        //     }
+        //
+        //     _elapsedTime = 0d;
+        // }
         
         
         
         //_rgbTexture.UpdateTexture(_viewProcessor.GetPNGFileName(_frame, 1));
         
-        _depthBufferTexture.Use(TextureUnit.Texture0);
+        var depthMapsArr = new[] { 0, 1 };
+        _raycastShader.SetUniformInts("depthMaps", ref depthMapsArr);
+        _depthBufferTexture1.Use(TextureUnit.Texture0);
+        _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
         
-        
-        _rgbTexture.Use(TextureUnit.Texture1);
+  
+        var rgbMapsArr = new[] { 2, 3 };
+        _raycastShader.SetUniformInts("rgbMaps", ref rgbMapsArr);
+        // _rgbTexture1.SetLocation(rgbLoc);
+        _rgbTexture1.Use(TextureUnit.Texture0 + 2);
+        _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);
         //_rgbTexture.Use(TextureUnit.Texture1);
         
         _raycastShader.Use();
@@ -284,7 +312,8 @@ public class RaycastReconstruction : IReconstructionApplication
         _raycastShader.SetUniformMatrix4f("inverseProjectionMatrix", ref _projectionInv);
         _raycastShader.SetUniformVec2("screenSize", ref _screenSize);
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
-        _raycastShader.SetUniformMatrix4f("depthMapCamPose", ref _depthMapCamPose);
+        _raycastShader.SetUniformMatrix4f("depthMapCamPoses[0]", ref _depthMapCamPose1);
+        _raycastShader.SetUniformMatrix4f("depthMapCamPoses[1]", ref _depthMapCamPose2);
         // _raycastShader.SetUniformInt("depthMap", 0);
         // _raycastShader.SetUniformInt("rgbMap", 1);
         

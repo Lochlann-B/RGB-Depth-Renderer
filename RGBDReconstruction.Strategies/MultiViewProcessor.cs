@@ -9,48 +9,105 @@ namespace RGBDReconstruction.Application;
 
 public class MultiViewProcessor(String directoryPath)
 {
+    private int _numCams = 0;
+    
     public String DirectoryPath { get; set; } = directoryPath;
 
-    private ConcurrentPriorityQueue<int, byte[]> _RGBFrameData = new();
-    private ConcurrentPriorityQueue<int, float[,]> _depthFrameData = new();
+    private List<ConcurrentPriorityQueue<int, byte[]>> _RGBFrameDatas = new();
+    private List<ConcurrentPriorityQueue<int, float[,]>> _depthFrameDatas = new();
 
     private SemaphoreSlim _semaphoreRGB = new(6);
     private SemaphoreSlim _semaphoreDepth = new(6);
 
     private int _maxFrameDataSize = 600;
 
-    private int _currentFrameRGB = 1;
-    private int _currentFrameDepth = 1;
+    private int[] _currentFrameRGBs;
+    private int[] _currentFrameDepths;
+    
+    
     private int _nextFrameToReturn = 1;
 
-    public (byte[], float[,])? GetNextAvailableFrame()
+    public List<(byte[], float[,])>? GetNextAvailableFrame()
     {
-        if ((_RGBFrameData.Count < 200 || _depthFrameData.Count < 200) && _nextFrameToReturn == 1)
+        // if ((_RGBFrameData.Count < 200 || _depthFrameData.Count < 200) && _nextFrameToReturn == 1)
+        // {
+        //     return null;
+        // }
+        //
+        // if (!_RGBFrameData.TryPeek(out var _) || !_depthFrameData.TryPeek(out var _)) return null;
+        //
+        // _RGBFrameData.TryPeek(out var rgb);
+        // if (rgb.Key != _nextFrameToReturn) return null;
+        //
+        // _depthFrameData.TryPeek(out var depth);
+        // if (depth.Key != _nextFrameToReturn) return null;
+
+        if (!NextFrameDataIsPreparedForAllCameras())
         {
             return null;
         }
 
-        if (!_RGBFrameData.TryPeek(out var _) || !_depthFrameData.TryPeek(out var _)) return null;
-
-        _RGBFrameData.TryPeek(out var rgb);
-        if (rgb.Key != _nextFrameToReturn) return null;
-
-        _depthFrameData.TryPeek(out var depth);
-        if (depth.Key != _nextFrameToReturn) return null;
-
         _nextFrameToReturn++;
-        _RGBFrameData.TryDequeue(out var rgbData);
-        _depthFrameData.TryDequeue(out var depthData);
-        return (rgbData.Value, depthData.Value);
+        var frameData = new List<(byte[], float[,])>();
+        for (int i = 0; i < _RGBFrameDatas.Count; i++)
+        {
+            _RGBFrameDatas[i].TryDequeue(out var rgbData);
+            _depthFrameDatas[i].TryDequeue(out var depthData);
+            frameData.Add((rgbData.Value, depthData.Value));
+        }
+
+        return frameData;
     }
 
-    public async Task LoadFramesDepthAsync()
+    private bool NextFrameDataIsPreparedForAllCameras()
+    {
+        var isReady = true;
+        
+        for (int i = 0; i < _RGBFrameDatas.Count; i++)
+        {
+            var _RGBFrameData = _RGBFrameDatas[i];
+            var _depthFrameData = _depthFrameDatas[i];
+            
+            isReady = isReady && !((_RGBFrameDatas[i].Count < 200 || _depthFrameDatas[i].Count < 200) &&
+                                   _nextFrameToReturn == 1);
+
+            isReady = isReady && !(!_RGBFrameDatas[i].TryPeek(out var _) || !_depthFrameDatas[i].TryPeek(out var _));
+            
+            _RGBFrameData.TryPeek(out var rgb);
+            isReady = isReady && rgb.Key == _nextFrameToReturn;
+
+            _depthFrameData.TryPeek(out var depth);
+            isReady = isReady && (depth.Key == _nextFrameToReturn);
+        }
+
+        return isReady;
+    }
+
+    public void LoadFramesDepthAllCams()
+    {
+        for (var i = 1; i <= _numCams; i++)
+        {
+            var cam = i;
+            Task.Run((() => LoadFramesDepthAsync(cam)));
+        }
+    }
+    
+    public void LoadFramesRGBAllCams()
+    {
+        for (var i = 1; i <= _numCams; i++)
+        {
+            var cam = i;
+            Task.Run((() => LoadFramesRGBAsync(cam)));
+        }
+    }
+
+    public async Task LoadFramesDepthAsync(int cam)
     {
         try
         {
             while (true)
             {
-                if (_depthFrameData.Count > _maxFrameDataSize || _semaphoreDepth.CurrentCount == 0)
+                if (_depthFrameDatas[cam].Count > _maxFrameDataSize || _semaphoreDepth.CurrentCount == 0)
                 {
                     //await Task.Delay(5);
                     continue;
@@ -59,8 +116,8 @@ public class MultiViewProcessor(String directoryPath)
                 await _semaphoreDepth.WaitAsync();
                 
                 // uses camera 1
-                int frameIdx = Interlocked.Increment(ref _currentFrameDepth) - 1;
-                Task.Run(() => LoadFrameDepthAsync(frameIdx, GetDepthMapFileName(frameIdx, 1))).ContinueWith(t => _semaphoreDepth.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
+                int frameIdx = Interlocked.Increment(ref _currentFrameDepths[cam-1]) - 1;
+                Task.Run(() => LoadFrameDepthAsync(frameIdx, GetDepthMapFileName(frameIdx, cam), cam)).ContinueWith(t => _semaphoreDepth.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
                 //_currentFrameDepth++;
             }
         } catch(Exception e)
@@ -69,14 +126,14 @@ public class MultiViewProcessor(String directoryPath)
         } 
     }
     
-    public async Task LoadFramesRGBAsync()
+    public async Task LoadFramesRGBAsync(int cam)
     {
         StbImage.stbi_set_flip_vertically_on_load(1);
         try
         {
             while (true)
             {
-                if (_RGBFrameData.Count > _maxFrameDataSize || _semaphoreRGB.CurrentCount == 0)
+                if (_RGBFrameDatas[cam-1].Count > _maxFrameDataSize || _semaphoreRGB.CurrentCount == 0)
                 {
                     //await Task.Delay(5);
                     continue;
@@ -85,8 +142,8 @@ public class MultiViewProcessor(String directoryPath)
                 await _semaphoreRGB.WaitAsync();
                 
                 // uses camera 1
-                int frameIdx = Interlocked.Increment(ref _currentFrameRGB) - 1;
-                Task.Run(() => LoadFrameRGBAsync(frameIdx, GetPNGFileName(frameIdx, 1))).ContinueWith(t => _semaphoreRGB.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
+                int frameIdx = Interlocked.Increment(ref _currentFrameRGBs[cam-1]) - 1;
+                Task.Run(() => LoadFrameRGBAsync(frameIdx, GetPNGFileName(frameIdx, cam), cam)).ContinueWith(t => _semaphoreRGB.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
                 //_currentFrameRGB++;
             }
         } catch(Exception e)
@@ -95,21 +152,21 @@ public class MultiViewProcessor(String directoryPath)
         }
     }
 
-    private async Task LoadFrameRGBAsync(int frameNo, string imgPath)
+    private async Task LoadFrameRGBAsync(int frameNo, string imgPath, int cam)
     {
         await Task.Run(() =>
         {
             using var img = File.OpenRead(imgPath);
-            _RGBFrameData.Enqueue(frameNo, ImageResult.FromStream(img, ColorComponents.RedGreenBlueAlpha).Data);
+            _RGBFrameDatas[cam-1].Enqueue(frameNo, ImageResult.FromStream(img, ColorComponents.RedGreenBlueAlpha).Data);
         });
     }
 
-    private async Task LoadFrameDepthAsync(int frameNo, string imgPath)
+    private async Task LoadFrameDepthAsync(int frameNo, string imgPath, int cam)
     {
         await Task.Run(() =>
         {
             // uses camera 1
-            _depthFrameData.Enqueue(frameNo, GetDepthMap(frameNo, 1));
+            _depthFrameDatas[cam-1].Enqueue(frameNo, GetDepthMap(frameNo, cam));
         });
     }
 
@@ -153,9 +210,11 @@ public class MultiViewProcessor(String directoryPath)
                         var Ry = Matrix4.CreateRotationY((float)Math.PI*(rz)/180f);
                         var Rz = Matrix4.CreateRotationZ((float)Math.PI*ry/180f);
                         var T = Matrix4.CreateTranslation(new Vector3(px, pz, py));
-                        var R = Rz * Ry * Rx * T;
+                        var rot = Rz * Ry * Rx;
+                        var R = rot.Inverted() * T;
+                        //var R = T;
                         //R[2,2] *= -1;
-                        list.Add(R); //R.Inverted());
+                        list.Add(R.Inverted());
                         //list.Add(Matrix4.Identity);
                         break;
                     case "px":
@@ -204,6 +263,9 @@ public class MultiViewProcessor(String directoryPath)
                 
             }
 
+            _numCams = list.Count;
+            _currentFrameDepths = Enumerable.Repeat(1, _numCams).ToArray();
+            _currentFrameRGBs = Enumerable.Repeat(1, _numCams).ToArray();
             return list;
         }
         catch (IOException e)

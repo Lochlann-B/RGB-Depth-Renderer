@@ -6,11 +6,10 @@ uniform vec2 screenSize;
 
 uniform mat3 intrinsicMatrix;
 
+uniform sampler2D depthMaps[2];
+uniform sampler2D rgbMaps[2];
 
-layout(binding = 0) uniform sampler2D depthMap;
-layout(binding = 1) uniform sampler2D rgbMap;
-
-uniform mat4 depthMapCamPose;
+uniform mat4 depthMapCamPoses[2];
 
 out vec4 fragColor;
 //out vec4 o_color;
@@ -60,81 +59,166 @@ out vec4 fragColor;
 //    o_color = vec4(shaded_color, 1.0);
 //}
 
-vec4 raycast(vec3 worldRayStart, vec3 worldRayDirection) {
-    vec4 rayO = depthMapCamPose * vec4(worldRayStart, 1.0f);
-    vec4 rayD = normalize(depthMapCamPose * vec4(worldRayDirection, 0.0f));
+float minMagnitude(highp float f1, highp float f2) {
+    highp float t1 = f1 < 0 ? f1 * -1 : f1;
+    highp float t2 = f2 < 0 ? f2 * -1 : f2;
 
-//    float s = 0.1f;
-//    vec4 p = rayO + s*rayD;
-//    vec3 imageCoords = (intrinsicMatrix * (p).xyz);
-//
-//    float zOffset = imageCoords.z == 0 ? 0.001f : 0f;
-//
-//    vec2 coords = vec2(imageCoords.x/(imageCoords.z + zOffset), imageCoords.y/(imageCoords.z + zOffset));
-    
+    if (t1 < t2) {
+        return f1;
+    }
+
+    return f2;
+}
+
+vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, sampler2D rgbTexture, float s) {
+    vec4 p = depthMapPose * vec4(worldPos, 1.0);
+
+    vec3 imageCoords = intrinsicMatrix * (p).xyz;
+
+    vec2 coords = vec2(imageCoords.x/imageCoords.z, imageCoords.y/imageCoords.z);
+
     //coords.y = 1080 - coords.y;
 
-//    if (coords.x >= 1920 || coords.y >= 1080) {
-//        return vec4(0, 1, 0, 0);
-//    }
-//
-//    float depth = texture(depthMap, coords/vec2(1920,1080)).r;
-//
-//    int maxIters = 1000;
-//
-//    s = (p.z - depth);
-    float depth;
+    if (coords.x < 0 || coords.y < 0 || coords.x >= 1920 || coords.y >= 1080) {
+        //outofboundsCol = 1f;
+        return vec3(-1,-1,1/0f);
+        //return vec4(0, 1, 0, 0);
+    }
+
+    float depth = texture(depthMap, coords/vec2(1920, 1080)).r;
+
+    //            if (depth > 10000) {
+    //                s = 0.01f;
+    //                //outofboundsCol = 1f;
+    //            } else {
+    //                s = (p.z - depth);
+    //            }
+
+    bool signChanged = sign(p.z - depth) != sign(s);
+    // avoid the ray from 'bouncing' back and forth from a point in which the depth map is 'in front' of the point from the depth camera's perspective
+    float dist = signChanged ? -1* (p.z - depth) : (p.z - depth);
+    return vec3(coords, dist);
+}
+
+vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
+    float signedDistances[2];
+    
     int maxIters = 1000;
-    vec2 coords;
-    vec3 imageCoords;
-    vec4 p = rayO;
-    float s = -0.02f;
-    bool signChanged = false;
-    float outofboundsCol = 0;
-    for (int i = 0; i < maxIters; i++) {
-        if (abs(s) < 0.02f) {
-            vec4 pixelColour = texture(rgbMap, coords/vec2(1920, 1080));
+    float smallestS = -0.02f;
+    vec3 currentPos = worldRayStart;
+    int smallestIdx = -1;
+    vec2 smallestSCoords;
+    
+    for(int i = 0; i < maxIters; i++) {
+        
+        if(abs(smallestS) < 0.02f && smallestIdx >= 0) {
+            // TODO: Do proper colour blending!
+            vec4 pixelColour = texture(rgbMaps[smallestIdx], smallestSCoords/vec2(1920, 1080));
+            //vec4 pixelColour = vec4(smallestSCoords/vec2(1920,1080), 0,1);
             return pixelColour;
-//            return vec4(1f,outofboundsCol,0, 1.0f);
-        } else {
-            if (i > 0) {
-                s = clamp(s, -0.02f, 0.02f);
-            } else {
-                s = clamp(s, -0.02f, 0.02f);
+        }
+        
+        smallestS = clamp(smallestS, -0.02f, 0.02f);
+        currentPos = currentPos + smallestS * 0.8f * worldRayDirection;
+        
+        float newSmallestS = 1/0f;
+        
+        // Change to number of cameras
+        for (int j = 0; j < 2; j++) {
+            vec3 marchResults = marchRayDepthMap(currentPos, depthMapCamPoses[j], depthMaps[j], rgbMaps[j], smallestS);
+            signedDistances[j] = marchResults.z;
+            newSmallestS = minMagnitude(newSmallestS, signedDistances[j]);
+            if (newSmallestS > signedDistances[j] - 1e-4 && newSmallestS < signedDistances[j] + 1e-4 && newSmallestS < 1/0f) {
+                smallestIdx = j;
+                smallestSCoords = marchResults.xy;
             }
-            p = p + rayD*s*0.8f;
-
-            imageCoords = intrinsicMatrix * (p).xyz;
-
-            coords = vec2(imageCoords.x/imageCoords.z, imageCoords.y/imageCoords.z);
-
-            //coords.y = 1080 - coords.y;
-
-            if (coords.x < 0 || coords.y < 0 || coords.x >= 1920 || coords.y >= 1080) {
-                //outofboundsCol = 1f;
-                continue;
-                //return vec4(0, 1, 0, 0);
-            }
-
-            depth = texture(depthMap, coords/vec2(1920, 1080)).r;
-
-//            if (depth > 10000) {
-//                s = 0.01f;
-//                //outofboundsCol = 1f;
-//            } else {
-//                s = (p.z - depth);
-//            }
-            
-            signChanged = sign(p.z - depth) != sign(s);
-            // avoid the ray from 'bouncing' back and forth from a point in which the depth map is 'in front' of the point from the depth camera's perspective
-            s = signChanged ? -1* (p.z - depth) : (p.z - depth);
+        }
+        
+        if (newSmallestS < 1/0f) {
+            smallestS = newSmallestS;
         }
     }
-//    if (abs(s) < 0.02f) {
-//        return vec4(1f,outofboundsCol,0, 1.0f);
-//    }
-    return vec4(0,outofboundsCol,abs(s),0);
+
+    return vec4(0,1,1,1);
 }
+
+//vec4 raycast(vec3 worldRayStart, vec3 worldRayDirection) {
+//    vec4 rayO = depthMapCamPoses[0] * vec4(worldRayStart, 1.0f);
+//    vec4 rayD = normalize(depthMapCamPoses[0] * vec4(worldRayDirection, 0.0f));
+//
+////    float s = 0.1f;
+////    vec4 p = rayO + s*rayD;
+////    vec3 imageCoords = (intrinsicMatrix * (p).xyz);
+////
+////    float zOffset = imageCoords.z == 0 ? 0.001f : 0f;
+////
+////    vec2 coords = vec2(imageCoords.x/(imageCoords.z + zOffset), imageCoords.y/(imageCoords.z + zOffset));
+//    
+//    //coords.y = 1080 - coords.y;
+//
+////    if (coords.x >= 1920 || coords.y >= 1080) {
+////        return vec4(0, 1, 0, 0);
+////    }
+////
+////    float depth = texture(depthMap, coords/vec2(1920,1080)).r;
+////
+////    int maxIters = 1000;
+////
+////    s = (p.z - depth);
+//    float depth;
+//    int maxIters = 1000;
+//    vec2 coords;
+//    vec3 imageCoords;
+//    vec4 p = vec4(worldRayStart, 1.0f);
+//    vec4 depthP;
+//    float s = -0.02f;
+//    bool signChanged = false;
+//    float outofboundsCol = 0;
+//    for (int i = 0; i < maxIters; i++) {
+//        if (abs(s) < 0.02f) {
+//            vec4 pixelColour = texture(rgbMaps[0], coords/vec2(1920, 1080));
+//            return pixelColour;
+////            return vec4(1f,outofboundsCol,0, 1.0f);
+//        } else {
+//            if (i > 0) {
+//                s = clamp(s, -0.02f, 0.02f);
+//            } else {
+//                s = clamp(s, -0.02f, 0.02f);
+//            }
+//            p = p + vec4(worldRayDirection, 0f)*s*0.8f;
+//            depthP = depthMapCamPoses[0] * p;
+//
+//            imageCoords = intrinsicMatrix * (depthP).xyz;
+//
+//            coords = vec2(imageCoords.x/imageCoords.z, imageCoords.y/imageCoords.z);
+//
+//            //coords.y = 1080 - coords.y;
+//
+//            if (coords.x < 0 || coords.y < 0 || coords.x >= 1920 || coords.y >= 1080) {
+//                //outofboundsCol = 1f;
+//                continue;
+//                //return vec4(0, 1, 0, 0);
+//            }
+//
+//            depth = texture(depthMaps[0], coords/vec2(1920, 1080)).r;
+//
+////            if (depth > 10000) {
+////                s = 0.01f;
+////                //outofboundsCol = 1f;
+////            } else {
+////                s = (p.z - depth);
+////            }
+//            
+//            signChanged = sign(depthP.z - depth) != sign(s);
+//            // avoid the ray from 'bouncing' back and forth from a point in which the depth map is 'in front' of the point from the depth camera's perspective
+//            s = signChanged ? -1* (depthP.z - depth) : (depthP.z - depth);
+//        }
+//    }
+////    if (abs(s) < 0.02f) {
+////        return vec4(1f,outofboundsCol,0, 1.0f);
+////    }
+//    return vec4(0,outofboundsCol,abs(s),0);
+//}
 
 void main() {
 //    if(texture(depthMap, gl_FragCoord.xy / screenSize).r >= 1.0f) {
@@ -195,7 +279,8 @@ void main() {
     //vec3 ro = (viewMatrix * vec4(0,0,0,1.0f)).xyz;
    
     
-    vec4 raycastResult = raycast(ro, rd);
+    //vec4 raycastResult = raycast(ro, rd);
+    vec4 raycastResult = raycastDepthMaps(ro, rd);
 
     if (raycastResult.w > 0.1f) {
         fragColor = raycastResult; // Intersection color

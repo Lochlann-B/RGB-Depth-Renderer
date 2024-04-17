@@ -77,6 +77,12 @@ public class Shader
         GL.Uniform1(location, value);
     }
 
+    public void SetUniformInts(string name, ref int[] values)
+    {
+        int location = GL.GetUniformLocation(_handle, name);
+        GL.Uniform1(location, values.Length, values);
+    }
+
     public void SetUniformVec3(string name, ref Vector3 values)
     {
         int location = GL.GetUniformLocation(_handle, name);
