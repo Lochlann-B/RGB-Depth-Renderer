@@ -41,21 +41,23 @@ public class RaycastReconstruction : IReconstructionApplication
         1f, 1f,
     ];
     
-    protected MultiViewProcessor _viewProcessor;
-    private float[,] _depthMap1;
-    private float[,] _depthMap2;
+    // protected MultiViewProcessor _viewProcessor;
+    // private float[,] _depthMap1;
+    // private float[,] _depthMap2;
 
     // private int _depthBufferTexture;
-    private Texture _depthBufferTexture1;
-    private Texture _depthBufferTexture2;
-    private Texture _rgbTexture1;
-    private Texture _rgbTexture2;
-    private Matrix4 _depthMapCamPose1;
-    private Matrix4 _depthMapCamPose2;
+    // private Texture _depthBufferTexture1;
+    // private Texture _depthBufferTexture2;
+    // private Texture _rgbTexture1;
+    // private Texture _rgbTexture2;
+    // private Matrix4 _depthMapCamPose1;
+    // private Matrix4 _depthMapCamPose2;
 
     private int _frame = 1;
 
-    private double _elapsedTime = 0d;
+    // private double _elapsedTime = 0d;
+
+    private MultiViewFramePreparer _framePreparer;
 
     private List<Matrix4> _depthCamPoses;
 
@@ -110,37 +112,42 @@ public class RaycastReconstruction : IReconstructionApplication
         _intrinsicMatrix = K;
         //_intrinsicMatrix.Transpose();
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
-        
-        _viewProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\chain_collision");
-        Task.Run(() => _viewProcessor.LoadFramesRGBAsync());
-        Task.Run(() => _viewProcessor.LoadFramesDepthAsync());
 
-        _depthCamPoses = _viewProcessor.GetCameraPoseInformation();
-        var camPose = _depthCamPoses[0];
-        _depthMapCamPose1 = camPose;
-        _depthMapCamPose1.Transpose();
-        _raycastShader.SetUniformMatrix4f("depthMapCamPoses[0]", ref _depthMapCamPose1);
-        
-        var camPose2 = _depthCamPoses[1];
-        _depthMapCamPose2 = camPose2;
-        _depthMapCamPose2.Transpose();
-        _raycastShader.SetUniformMatrix4f("depthMapCamPoses[1]", ref _depthMapCamPose2);
-        
-        _depthMap1 = _viewProcessor.GetDepthMap(1, 1);
-        _depthBufferTexture1 = new Texture(_depthMap1);
-        _depthBufferTexture1.Use(TextureUnit.Texture0);
-        
-        _depthMap2 = _viewProcessor.GetDepthMap(1, 2);
-        _depthBufferTexture2 = new Texture(_depthMap2);
-        _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
-        
-        _rgbTexture1 = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
-        _rgbTexture1.Use(TextureUnit.Texture0 + 1);
-        
-        _rgbTexture2 = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_002.png");
-        _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);
+        _framePreparer = new MultiViewFramePreparer(0);
+        _framePreparer.Init();
 
-        
+        _depthCamPoses = _framePreparer.DepthCamPoses;
+
+        // _viewProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\chain_collision");
+        // Task.Run(() => _viewProcessor.LoadFramesRGBAsync());
+        // Task.Run(() => _viewProcessor.LoadFramesDepthAsync());
+
+        // _depthCamPoses = _viewProcessor.GetCameraPoseInformation();
+        // var camPose = _depthCamPoses[0];
+        // _depthMapCamPose1 = camPose;
+        // _depthMapCamPose1.Transpose();
+        // _raycastShader.SetUniformMatrix4f("depthMapCamPoses[0]", ref _depthMapCamPose1);
+        //
+        // var camPose2 = _depthCamPoses[1];
+        // _depthMapCamPose2 = camPose2;
+        // _depthMapCamPose2.Transpose();
+        // _raycastShader.SetUniformMatrix4f("depthMapCamPoses[1]", ref _depthMapCamPose2);
+        //
+        // _depthMap1 = _viewProcessor.GetDepthMap(1, 1);
+        // _depthBufferTexture1 = new Texture(_depthMap1);
+        // _depthBufferTexture1.Use(TextureUnit.Texture0);
+        //
+        // _depthMap2 = _viewProcessor.GetDepthMap(1, 2);
+        // _depthBufferTexture2 = new Texture(_depthMap2);
+        // _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
+        //
+        // _rgbTexture1 = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
+        // _rgbTexture1.Use(TextureUnit.Texture0 + 1);
+        //
+        // _rgbTexture2 = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_002.png");
+        // _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);
+
+
 
         // _depthBufferTexture = GL.GenTexture();
         // GL.BindTexture(TextureTarget.Texture2D, _depthBufferTexture);
@@ -290,21 +297,23 @@ public class RaycastReconstruction : IReconstructionApplication
         //     _elapsedTime = 0d;
         // }
         
-        
+        _framePreparer.TryUpdateNextFrames(args.Time);
         
         //_rgbTexture.UpdateTexture(_viewProcessor.GetPNGFileName(_frame, 1));
         
-        var depthMapsArr = new[] { 0, 1 };
+        var depthMapsArr = new[] { 0, 1,};
         _raycastShader.SetUniformInts("depthMaps", ref depthMapsArr);
-        _depthBufferTexture1.Use(TextureUnit.Texture0);
-        _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
+        _framePreparer.UseDepthMapTextures(depthMapsArr);
+        // _depthBufferTexture1.Use(TextureUnit.Texture0);
+        // _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
         
   
-        var rgbMapsArr = new[] { 2, 3 };
+        var rgbMapsArr = new[] { 2, 3};
         _raycastShader.SetUniformInts("rgbMaps", ref rgbMapsArr);
+        _framePreparer.UseRGBMapTextures(rgbMapsArr);
         // _rgbTexture1.SetLocation(rgbLoc);
-        _rgbTexture1.Use(TextureUnit.Texture0 + 2);
-        _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);
+        // _rgbTexture1.Use(TextureUnit.Texture0 + 2);
+        // _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);
         //_rgbTexture.Use(TextureUnit.Texture1);
         
         _raycastShader.Use();
@@ -312,8 +321,13 @@ public class RaycastReconstruction : IReconstructionApplication
         _raycastShader.SetUniformMatrix4f("inverseProjectionMatrix", ref _projectionInv);
         _raycastShader.SetUniformVec2("screenSize", ref _screenSize);
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
-        _raycastShader.SetUniformMatrix4f("depthMapCamPoses[0]", ref _depthMapCamPose1);
-        _raycastShader.SetUniformMatrix4f("depthMapCamPoses[1]", ref _depthMapCamPose2);
+        for (int i = 0; i < _depthCamPoses.Count; i++)
+        {
+            var pose = _depthCamPoses[i];
+            _raycastShader.SetUniformMatrix4f($"depthMapCamPoses[{i}]", ref pose);
+        }
+        // _raycastShader.SetUniformMatrix4f("depthMapCamPoses[0]", ref _depthMapCamPose1);
+        // _raycastShader.SetUniformMatrix4f("depthMapCamPoses[1]", ref _depthMapCamPose2);
         // _raycastShader.SetUniformInt("depthMap", 0);
         // _raycastShader.SetUniformInt("rgbMap", 1);
         

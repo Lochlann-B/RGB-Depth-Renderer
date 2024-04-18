@@ -10,6 +10,8 @@ public class Texture
 {
     private int _handle;
     private ImageResult _image;
+    private int _width;
+    private int _height;
     
     public Texture(string imgPath)
     {
@@ -32,6 +34,9 @@ public class Texture
                 PixelType.UnsignedByte, 
                 _image.Data);
         }
+
+        _width = _image.Width;
+        _height = _image.Height;
         
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
@@ -78,7 +83,7 @@ public class Texture
     public void UpdateWithByteData(byte[] data)
     {
         GL.BindTexture(TextureTarget.Texture2D, _handle);
-        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _image.Width, _image.Height, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Rgba, PixelType.UnsignedByte, data);
         // GL.TexImage2D(TextureTarget.Texture2D, 
         //     0, 
         //     PixelInternalFormat.Rgba, 
@@ -100,12 +105,31 @@ public class Texture
     public Texture(float[,] texValues)
     {
         _handle = GL.GenTexture();
-        
+        _width = texValues.GetLength(1);
+        _height = texValues.GetLength(0);
         GL.BindTexture(TextureTarget.Texture2D, _handle);
         GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.R32f, texValues.GetLength(1),
             texValues.GetLength(0));
         GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texValues.GetLength(1), texValues.GetLength(0),
             PixelFormat.Red, PixelType.Float, texValues);
+    }
+
+    public Texture(byte[] data, int width, int height)
+    {
+        _handle = GL.GenTexture();
+        _width = width;
+        _height = height;
+        GL.BindTexture(TextureTarget.Texture2D, _handle);
+        
+        StbImage.stbi_set_flip_vertically_on_load(1);
+        
+        GL.BindTexture(TextureTarget.Texture2D, _handle);
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+    }
+
+    public Texture()
+    {
+        _handle = GL.GenTexture();
     }
 
     public void Use(TextureUnit texTarget = TextureUnit.Texture0)

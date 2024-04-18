@@ -113,7 +113,7 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
         
         if(abs(smallestS) < 0.02f && smallestIdx >= 0) {
             // TODO: Do proper colour blending!
-            vec4 pixelColour = texture(rgbMaps[smallestIdx], smallestSCoords/vec2(1920, 1080));
+            vec4 pixelColour = texture(rgbMaps[0], smallestSCoords/vec2(1920, 1080));
             //vec4 pixelColour = vec4(smallestSCoords/vec2(1920,1080), 0,1);
             return pixelColour;
         }
