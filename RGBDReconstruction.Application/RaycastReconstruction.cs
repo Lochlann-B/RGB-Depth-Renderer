@@ -300,17 +300,18 @@ public class RaycastReconstruction : IReconstructionApplication
         _framePreparer.TryUpdateNextFrames(args.Time);
         
         //_rgbTexture.UpdateTexture(_viewProcessor.GetPNGFileName(_frame, 1));
+        var rgbMapsArr = new[] { 0, 1,2,3,4,5};
+        _raycastShader.SetUniformInts("rgbMaps", ref rgbMapsArr);
+        _framePreparer.UseRGBMapTextures(rgbMapsArr);
         
-        var depthMapsArr = new[] { 0, 1,};
+        var depthMapsArr = new[] { 6,7,8,9,10,11};
         _raycastShader.SetUniformInts("depthMaps", ref depthMapsArr);
         _framePreparer.UseDepthMapTextures(depthMapsArr);
         // _depthBufferTexture1.Use(TextureUnit.Texture0);
         // _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
         
   
-        var rgbMapsArr = new[] { 2, 3};
-        _raycastShader.SetUniformInts("rgbMaps", ref rgbMapsArr);
-        _framePreparer.UseRGBMapTextures(rgbMapsArr);
+        
         // _rgbTexture1.SetLocation(rgbLoc);
         // _rgbTexture1.Use(TextureUnit.Texture0 + 2);
         // _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);

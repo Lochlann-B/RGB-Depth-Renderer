@@ -6,10 +6,11 @@ uniform vec2 screenSize;
 
 uniform mat3 intrinsicMatrix;
 
-uniform sampler2D depthMaps[2];
-uniform sampler2D rgbMaps[2];
+uniform sampler2D rgbMaps[6];
+uniform sampler2D depthMaps[6];
 
-uniform mat4 depthMapCamPoses[2];
+
+uniform mat4 depthMapCamPoses[6];
 
 out vec4 fragColor;
 //out vec4 o_color;
@@ -101,30 +102,33 @@ vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
 }
 
 vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
-    float signedDistances[2];
-    
+    float signedDistances[6];
+
+    float truncDist = 0.02f;
     int maxIters = 1000;
-    float smallestS = -0.02f;
+    float smallestS = -truncDist;
+    
     vec3 currentPos = worldRayStart;
     int smallestIdx = -1;
     vec2 smallestSCoords;
     
     for(int i = 0; i < maxIters; i++) {
         
-        if(abs(smallestS) < 0.02f && smallestIdx >= 0) {
+        if(abs(smallestS) < 5e-3 && smallestIdx >= 0) {
             // TODO: Do proper colour blending!
-            vec4 pixelColour = texture(rgbMaps[0], smallestSCoords/vec2(1920, 1080));
+            vec4 pixelColour = texture(rgbMaps[smallestIdx], smallestSCoords/vec2(1920, 1080));
             //vec4 pixelColour = vec4(smallestSCoords/vec2(1920,1080), 0,1);
+            //vec4 col = vec4(1,1,0,1);
             return pixelColour;
         }
         
-        smallestS = clamp(smallestS, -0.02f, 0.02f);
+        smallestS = clamp(smallestS, -truncDist, truncDist);
         currentPos = currentPos + smallestS * 0.8f * worldRayDirection;
         
         float newSmallestS = 1/0f;
         
         // Change to number of cameras
-        for (int j = 0; j < 2; j++) {
+        for (int j = 0; j < 6; j++) {
             vec3 marchResults = marchRayDepthMap(currentPos, depthMapCamPoses[j], depthMaps[j], rgbMaps[j], smallestS);
             signedDistances[j] = marchResults.z;
             newSmallestS = minMagnitude(newSmallestS, signedDistances[j]);

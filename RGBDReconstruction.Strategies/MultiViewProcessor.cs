@@ -3,6 +3,7 @@ using System.Diagnostics;
 using OpenTK.Mathematics;
 using RGBDReconstruction.Strategies;
 using System.IO;
+using OpenTK.Graphics.OpenGL4;
 using StbImageSharp;
 
 namespace RGBDReconstruction.Application;
@@ -16,8 +17,8 @@ public class MultiViewProcessor(String directoryPath)
     private ConcurrentPriorityQueue<int, byte[]>[] _RGBFrameDatas;
     private ConcurrentPriorityQueue<int, float[,]>[] _depthFrameDatas;
 
-    private SemaphoreSlim _semaphoreRGB = new(10);
-    private SemaphoreSlim _semaphoreDepth = new(10);
+    private SemaphoreSlim _semaphoreRGB = new(12);
+    private SemaphoreSlim _semaphoreDepth = new(12);
 
     private int _maxFrameDataSize = 300;
 
@@ -34,6 +35,7 @@ public class MultiViewProcessor(String directoryPath)
 
     public List<(byte[], float[,])> GetFirstFrame()
     {
+        StbImage.stbi_set_flip_vertically_on_load(1);
         var result = new List<(byte[], float[,])>();
         for (int i = 1; i <= _numCams; i++)
         {
@@ -46,7 +48,7 @@ public class MultiViewProcessor(String directoryPath)
         return result;
     }
 
-    public List<(byte[], float[,])>? GetNextAvailableFrame()
+    public (byte[], float[,])[]? GetNextAvailableFrame()
     {
         // if ((_RGBFrameData.Count < 200 || _depthFrameData.Count < 200) && _nextFrameToReturn == 1)
         // {
@@ -67,12 +69,12 @@ public class MultiViewProcessor(String directoryPath)
         }
 
         _nextFrameToReturn++;
-        var frameData = new List<(byte[], float[,])>();
+        var frameData = new (byte[], float[,])[_numCams];
         for (int i = 0; i < _RGBFrameDatas.Length; i++)
         {
             _RGBFrameDatas[i].TryDequeue(out var rgbData);
             _depthFrameDatas[i].TryDequeue(out var depthData);
-            frameData.Add((rgbData.Value, depthData.Value));
+            frameData[i] = (rgbData.Value, depthData.Value);
         }
 
         return frameData;
@@ -87,11 +89,11 @@ public class MultiViewProcessor(String directoryPath)
             var _RGBFrameData = _RGBFrameDatas[i];
             var _depthFrameData = _depthFrameDatas[i];
             
-            isReady = isReady && !((_RGBFrameDatas[i].Count < 200/_numCams || _depthFrameDatas[i].Count < 200/_numCams) &&
+            isReady = isReady && !((_RGBFrameDatas[i].Count < 20 || _depthFrameDatas[i].Count < 20) &&
                                    _nextFrameToReturn == 1);
 
             isReady = isReady && !(!_RGBFrameDatas[i].TryPeek(out var _) || !_depthFrameDatas[i].TryPeek(out var _));
-            
+        
             _RGBFrameData.TryPeek(out var rgb);
             isReady = isReady && rgb.Key == _nextFrameToReturn;
 
@@ -267,7 +269,7 @@ public class MultiViewProcessor(String directoryPath)
 
     public List<Matrix4> GetCameraPoseInformation()
     {
-        int numesleft = 2;
+        // int numesleft = 2;
         string filePath = directoryPath + "/camera_poses.txt";
         var list = new List<Matrix4>();
         try
@@ -283,10 +285,10 @@ public class MultiViewProcessor(String directoryPath)
             // Read each line in the file
             for (int i = 0; i < lines.Length; i++)
             {
-                if (numesleft == 0)
-                {
-                    break;
-                }
+                // if (numesleft == 0)
+                // {
+                //     break;
+                // }
                 
                 var line = lines[i];
                 if (i == 0)
@@ -307,7 +309,7 @@ public class MultiViewProcessor(String directoryPath)
                 switch (part)
                 {
                     case "e":
-                        numesleft--;
+                        // numesleft--;
                         var Rx = Matrix4.CreateRotationX((float)Math.PI*(rx-90f)/180f);
                         var Ry = Matrix4.CreateRotationY((float)Math.PI*(rz)/180f);
                         var Rz = Matrix4.CreateRotationZ((float)Math.PI*ry/180f);
