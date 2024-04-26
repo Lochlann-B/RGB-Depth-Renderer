@@ -5,12 +5,14 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>preview</LangVersion>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Emgu.CV" Version="4.8.1.5350" />
       <PackageReference Include="Emgu.CV.runtime.windows" Version="4.8.1.5350" />
       <PackageReference Include="FFMediaToolkit" Version="4.5.1" />
+      <PackageReference Include="FFMpegCore" Version="5.1.0" />
       <PackageReference Include="ILGPU" Version="1.5.1" />
       <PackageReference Include="ILGPU.Algorithms" Version="1.5.1" />
       <PackageReference Include="OpenCV" Version="2.4.11" />
@@ -23,6 +25,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Geometry\Geometry.csproj" />
       <ProjectReference Include="..\OpenTKDowngradeHelper\OpenTKDowngradeHelper.csproj" />
+      <ProjectReference Include="..\VideoHandler\VideoHandler.csproj" />
     </ItemGroup>
 
     <ItemGroup>

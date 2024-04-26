@@ -71,6 +71,8 @@ public class Texture
             PixelType.Float, 
             IntPtr.Zero);
         
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
         
         GL.BindBuffer(BufferTarget.PixelUnpackBuffer, _pboId);
         GL.BufferData(BufferTarget.PixelUnpackBuffer, _width * _height * 4, IntPtr.Zero, BufferUsageHint.StreamDraw); // Assuming RGBA
@@ -78,6 +80,25 @@ public class Texture
         
         // GL.BindTexture(TextureTarget.Texture2D, 0);
         UpdateWithFloatArrayData(texValues);
+    }
+
+    public Texture(IntPtr dataPtr, int width, int height)
+    {
+        _handle = GL.GenTexture();
+        _width = width;
+        _height = height;
+        
+        GL.BindTexture(TextureTarget.Texture2D, _handle);
+        
+        GL.TexImage2D(TextureTarget.Texture2D, 
+            0, 
+            PixelInternalFormat.Rgba, 
+            _width, 
+            _height, 
+            0, 
+            PixelFormat.Rgba, 
+            PixelType.UnsignedByte, 
+            dataPtr);
     }
 
     public Texture(byte[] data, int width, int height)
@@ -154,6 +175,12 @@ public class Texture
         
     }
 
+    public void UpdateWithPointer(IntPtr dataPtr)
+    {
+        GL.BindTexture(TextureTarget.Texture2D, _handle);
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Rgb, PixelType.UnsignedByte, dataPtr);
+    }
+
     public unsafe void UpdateWithByteData(byte[] data)
     {
         fixed (byte* p = data)
@@ -224,6 +251,8 @@ public class Texture
             // watch.Stop();
             // Console.WriteLine("bind time: {0}ms", watch.ElapsedMilliseconds);
             // watch.Restart();
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
             GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Red, PixelType.Float, pter);
             // watch.Stop();
         }

@@ -10,7 +10,7 @@ namespace RGBDReconstruction.Application;
 
 public class MultiViewProcessor(String directoryPath)
 {
-    private int _numCams = 0;
+    protected int _numCams = 0;
     
     public String DirectoryPath { get; set; } = directoryPath;
 
@@ -20,18 +20,18 @@ public class MultiViewProcessor(String directoryPath)
     private SemaphoreSlim _semaphoreRGB = new(12);
     private SemaphoreSlim _semaphoreDepth = new(12);
 
-    private int _maxFrameDataSize = 300;
+    protected int _maxFrameDataSize = 300;
 
     // private int[] _currentFrameRGBs;
     // private int[] _currentFrameDepths;
 
-    private int _currentFrameRGB = 1;
-    private int _currentFrameDepth = 1;
+    protected int _currentFrameRGB = 1;
+    protected int _currentFrameDepth = 1;
     
-    private int _nextFrameToReturn = 1;
+    protected int _nextFrameToReturn = 1;
 
-    private bool _notReachedFinalRGBFrame = true;
-    private bool _notReachedFinalDepthFrame = true;
+    protected bool _notReachedFinalRGBFrame = true;
+    protected bool _notReachedFinalDepthFrame = true;
 
     public List<(byte[], float[,])> GetFirstFrame()
     {
