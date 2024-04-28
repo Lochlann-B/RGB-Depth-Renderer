@@ -1,9 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
-using FFmpeg.AutoGen;
+using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
+
+// using FFmpeg.AutoGen;
 
 namespace VideoHandler;
 
-using FFMpegCore;
 
 public unsafe class VideoStreamHandler
 {
@@ -13,8 +15,18 @@ public unsafe class VideoStreamHandler
     private int videoStreamIndex = -1;
     private AVBufferRef* hwDeviceCtx = null;
 
+    public static void Init()
+    {
+        Console.WriteLine("Current directory: " + Environment.CurrentDirectory);
+        Console.WriteLine("Running in {0}-bit mode.", Environment.Is64BitProcess ? "64" : "32");
+        FFmpegBinariesHelper.RegisterFFmpegBinaries();
+        DynamicallyLoadedBindings.Initialize();
+        Console.WriteLine($"FFmpeg version info: {ffmpeg.av_version_info()}");
+    }
+
     public void Initialize(string filePath)
     {
+        Console.WriteLine($"FFmpeg version info: {ffmpeg.av_version_info()}");
         ffmpeg.avdevice_register_all();
         ffmpeg.avformat_network_init();
         
@@ -48,7 +60,8 @@ public unsafe class VideoStreamHandler
         if (ffmpeg.av_hwdevice_ctx_create(&hwDeviceCtxx, hwType, null, null, 0) < 0)
             throw new ApplicationException("Could not initialize the hardware device.");
 
-        pCodecContext->hw_device_ctx = ffmpeg.av_buffer_ref(hwDeviceCtx);
+        pCodecContext->hw_device_ctx = ffmpeg.av_buffer_ref(hwDeviceCtxx);
+        // AVCodec* codec = ffmpeg.avcodec_find_decoder_by_name("h264");
         AVCodec* codec = ffmpeg.avcodec_find_decoder_by_name("h264_cuvid");
         if (codec == null) throw new ApplicationException("Codec not found.");
 
@@ -58,6 +71,8 @@ public unsafe class VideoStreamHandler
         hwDeviceCtx = hwDeviceCtxx;
         
         pFrame = ffmpeg.av_frame_alloc();
+        ffmpeg.av_log_set_level(ffmpeg.AV_LOG_DEBUG);
+
     }
 
     public AVFrame* GetNextFrame()

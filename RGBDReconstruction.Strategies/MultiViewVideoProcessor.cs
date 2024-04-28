@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using FFmpeg.AutoGen;
+using OpenTK.Mathematics;
 using RGBDReconstruction.Application;
 using VideoHandler;
 
@@ -7,8 +8,8 @@ namespace RGBDReconstruction.Strategies;
 
 public class MultiViewVideoProcessor : MultiViewProcessor
 {
-    private List<VideoStreamHandler> _videoStreamHandlersDepth;
-    private List<VideoStreamHandler> _videoStreamHandlersRGB;
+    private List<VideoStreamHandler> _videoStreamHandlersDepth = [];
+    private List<VideoStreamHandler> _videoStreamHandlersRGB = [];
 
     private ConcurrentPriorityQueue<int, IntPtr>[] _videoFramesDepth;
     private ConcurrentPriorityQueue<int, IntPtr>[] _videoFramesRGB;
@@ -18,6 +19,11 @@ public class MultiViewVideoProcessor : MultiViewProcessor
 
     public void PrepareVideoFiles()
     {
+        VideoStreamHandler.Init();
+        
+        _videoFramesDepth = new ConcurrentPriorityQueue<int, IntPtr>[_numCams];
+        _videoFramesRGB = new ConcurrentPriorityQueue<int, IntPtr>[_numCams];
+        
         for (int i = 0; i < _numCams; i++)
         {
             var fileName = GetVideoFileName(i + 1, ".mkv", "");
@@ -34,7 +40,7 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         for (int i = 0; i < _numCams; i++)
         {
             var data = new IntPtr(_videoStreamHandlersRGB[i].GetNextFrame()->data[0]);
-            // TODO: Add depth
+            // TODO: Add depth to 2nd argument
             res[i] = (data, data);
         }
 
@@ -99,13 +105,13 @@ public class MultiViewVideoProcessor : MultiViewProcessor
                 for (int i = 0; i < _numCams; i++)
                 {
                     // TODO :Add depth
-                    // var data = new IntPtr(_videoStreamHandlers[i].GetNextFrame()->data[0]);
-                    // if (data == IntPtr.Zero)
-                    // {
-                    //     hasNextFrame = false;
-                    //     break;
-                    // }
-                    // _videoFrames[i].Enqueue(frameIdx,data);
+                    var data = new IntPtr(_videoStreamHandlersRGB[i].GetNextFrame()->data[0]);
+                    if (data == IntPtr.Zero)
+                    {
+                        hasNextFrame = false;
+                        break;
+                    }
+                    _videoFramesDepth[i].Enqueue(frameIdx,data);
                 }
             }
         }

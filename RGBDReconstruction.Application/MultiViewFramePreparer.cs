@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using FFmpeg.AutoGen.Abstractions;
+using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 using ILGPU.IR.Analyses;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
@@ -70,14 +72,21 @@ public class MultiViewFramePreparer
             mat.Transpose();
             DepthCamPoses[i] = mat;
         }
+        
+        // Console.WriteLine("Current directory: " + Environment.CurrentDirectory);
+        // Console.WriteLine("Running in {0}-bit mode.", Environment.Is64BitProcess ? "64" : "32");
+        // FFmpegBinariesHelper.RegisterFFmpegBinaries();
+        // DynamicallyLoadedBindings.Initialize();
+        // Console.WriteLine($"FFmpeg version info: {ffmpeg.av_version_info()}");
+        _viewVidProcessor.PrepareVideoFiles();
 
         _rgbTextures = new List<Texture>();
         _depthTextures = new List<Texture>();
         
         var rgbdepth = _viewVidProcessor.GetFirstVideoFrame();
         
-        Task.Run(() => _viewVidProcessor.LoadFramesRGBAllCams());
-        Task.Run(() => _viewVidProcessor.LoadFramesDepthAllCams());
+        // Task.Run(() => _viewVidProcessor.LoadFramesRGBAllCams());
+        // Task.Run(() => _viewVidProcessor.LoadFramesDepthAllCams());
 
        
 

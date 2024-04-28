@@ -71,7 +71,7 @@ float minMagnitude(highp float f1, highp float f2) {
     return f2;
 }
 
-vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, sampler2D rgbTexture, float s, vec3 oldPos, float threshold) {
+vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, sampler2D rgbTexture, float s, vec3 oldPos, float threshold, int searchLimit) {
     vec4 p = depthMapPose * vec4(worldPos, 1.0);
 
     vec3 imageCoords = intrinsicMatrix * (p).xyz;
@@ -127,7 +127,7 @@ vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
         //float LBDepth = texture(depthMap, vec2(LBImg.x/LBImg.z, LBImg.y/LBImg.z)/vec2(1920, 1080)).r;
         float UBDepth = depth;
 
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < searchLimit; i++) {
             avg = (UB + LB)/2f;
 
             newP = avg;
@@ -174,8 +174,8 @@ vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
 vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
     float signedDistances[6];
 
-    float truncDist = 0.1f;
-    int maxIters = 1000;
+    float truncDist = 0.02f;
+    int maxIters = 500;
     float smallestS = -truncDist;
     float threshold = 0.005f;
     
@@ -184,11 +184,13 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
     vec2 smallestSCoords;
     vec3 oldPos = worldRayStart;
     
+    int searchLimit = int(log2(truncDist/threshold)+1);
+    
     for(int i = 0; i < maxIters; i++) {
         
         if(abs(smallestS) < threshold && smallestIdx >= 0) {
             // TODO: Do proper colour blending!
-            vec4 pixelColour = texture(rgbMaps[smallestIdx], smallestSCoords/vec2(1920, 1080));
+            vec4 pixelColour = texture(depthMaps[smallestIdx], smallestSCoords/vec2(1920, 1080));
             //vec4 pixelColour = vec4(smallestSCoords/vec2(1920,1080), 0,1);
 //            vec4 pixelColour = vec4(1,1,0,1);
             return pixelColour;
@@ -202,7 +204,7 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
         
         // Change to number of cameras
         for (int j = 0; j < 6; j++) {
-            vec3 marchResults = marchRayDepthMap(currentPos, depthMapCamPoses[j], depthMaps[j], rgbMaps[j], smallestS, oldPos, threshold);
+            vec3 marchResults = marchRayDepthMap(currentPos, depthMapCamPoses[j], depthMaps[j], rgbMaps[j], smallestS, oldPos, threshold, searchLimit);
             signedDistances[j] = marchResults.z;
             newSmallestS = minMagnitude(newSmallestS, signedDistances[j]);
             if (newSmallestS > signedDistances[j] - 1e-4 && newSmallestS < signedDistances[j] + 1e-4 && newSmallestS != 1/0f) {

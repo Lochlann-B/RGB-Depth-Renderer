@@ -114,7 +114,7 @@ public class RaycastReconstruction : IReconstructionApplication
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
 
         _framePreparer = new MultiViewFramePreparer(0);
-        _framePreparer.InitImgTextures();
+        _framePreparer.InitVideoTextures();
 
         _depthCamPoses = _framePreparer.DepthCamPoses;
 
