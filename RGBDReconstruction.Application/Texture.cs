@@ -89,16 +89,25 @@ public class Texture
         _height = height;
         
         GL.BindTexture(TextureTarget.Texture2D, _handle);
-        
+        GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
         GL.TexImage2D(TextureTarget.Texture2D, 
             0, 
             PixelInternalFormat.Rgba, 
             _width, 
             _height, 
             0, 
-            PixelFormat.Rgba, 
+            PixelFormat.Rgb, 
             PixelType.UnsignedByte, 
             dataPtr);
+        
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+        
+        ErrorCode errorCode = GL.GetError();
+       Console.WriteLine(errorCode);
+        
     }
 
     public Texture(byte[] data, int width, int height)
@@ -177,8 +186,28 @@ public class Texture
 
     public void UpdateWithPointer(IntPtr dataPtr)
     {
+        // GL.BindTexture(TextureTarget.Texture2D, _handle);
+        // GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Rgb, PixelType.UnsignedByte, dataPtr);
+        
         GL.BindTexture(TextureTarget.Texture2D, _handle);
-        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Rgb, PixelType.UnsignedByte, dataPtr);
+        GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
+        GL.TexImage2D(TextureTarget.Texture2D, 
+            0, 
+            PixelInternalFormat.Rgba, 
+            _width, 
+            _height, 
+            0, 
+            PixelFormat.Rgb, 
+            PixelType.UnsignedByte, 
+            dataPtr);
+        
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+        
+        ErrorCode errorCode = GL.GetError();
+        Console.WriteLine(errorCode);
     }
 
     public unsafe void UpdateWithByteData(byte[] data)

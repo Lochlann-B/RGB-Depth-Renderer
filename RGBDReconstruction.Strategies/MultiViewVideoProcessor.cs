@@ -26,6 +26,13 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         
         for (int i = 0; i < _numCams; i++)
         {
+            _videoFramesRGB[i] = new ConcurrentPriorityQueue<int, IntPtr>();
+            _videoFramesDepth[i] = new ConcurrentPriorityQueue<int, IntPtr>();
+        }
+        // _RGB
+        
+        for (int i = 0; i < _numCams; i++)
+        {
             var fileName = GetVideoFileName(i + 1, ".mkv", "");
             var videoStreamHandler = new VideoStreamHandler();
             videoStreamHandler.Initialize(fileName);
@@ -119,6 +126,16 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         {
             Console.WriteLine("All depth video frames loaded or error: " + e);
         }
+    }
+    
+    public new void LoadFramesDepthAllCams()
+    {
+        Task.Run((LoadFramesDepthAsync));
+    }
+    
+    public new void LoadFramesRGBAllCams()
+    {
+        Task.Run((LoadFramesRGBAsync));
     }
 
     public new unsafe void LoadFramesRGBAsync()

@@ -85,8 +85,8 @@ public class MultiViewFramePreparer
         
         var rgbdepth = _viewVidProcessor.GetFirstVideoFrame();
         
-        // Task.Run(() => _viewVidProcessor.LoadFramesRGBAllCams());
-        // Task.Run(() => _viewVidProcessor.LoadFramesDepthAllCams());
+        Task.Run(() => _viewVidProcessor.LoadFramesRGBAllCams());
+        Task.Run(() => _viewVidProcessor.LoadFramesDepthAllCams());
 
        
 
@@ -148,7 +148,7 @@ public class MultiViewFramePreparer
             return;
         }
 
-        var nextFrameData = _viewImgProcessor.GetNextAvailableFrame();
+        var nextFrameData = _viewVidProcessor.GetNextAvailableFrame();
         if (nextFrameData is null)
         {
             return;

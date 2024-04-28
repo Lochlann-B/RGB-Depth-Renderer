@@ -297,7 +297,11 @@ public class RaycastReconstruction : IReconstructionApplication
         //     _elapsedTime = 0d;
         // }
         
-        _framePreparer.TryUpdateNextFrames(args.Time);
+        
+        
+        _framePreparer.TryUpdateNextVideoFrames(args.Time);
+        
+        
         
         //_rgbTexture.UpdateTexture(_viewProcessor.GetPNGFileName(_frame, 1));
         var rgbMapsArr = new[] { 0, 1,2,3,4,5};
