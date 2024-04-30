@@ -83,12 +83,12 @@ public class MultiViewFramePreparer
         _rgbTextures = new List<Texture>();
         _depthTextures = new List<Texture>();
         
-        var rgbdepth = _viewVidProcessor.GetFirstVideoFrame();
+        // var rgbdepth = await _viewVidProcessor.Begin();
         
-        Task.Run(() => _viewVidProcessor.LoadFramesRGBAllCams());
-        Task.Run(() => _viewVidProcessor.LoadFramesDepthAllCams());
+        // Task.Run(() => _viewVidProcessor.LoadFramesRGBAllCams());
+        // Task.Run(() => _viewVidProcessor.LoadFramesDepthAllCams());
 
-       
+        var rgbdepth = _viewVidProcessor.AwaitNextFrame();
 
         for (int i = 0; i < rgbdepth.Length; i++)
         {
@@ -97,6 +97,7 @@ public class MultiViewFramePreparer
             _depthTextures.Add(depthtex);
             _rgbTextures.Add(rgbtex);
         }
+        
     }
 
     public void UseDepthMapTextures(int[] arr)

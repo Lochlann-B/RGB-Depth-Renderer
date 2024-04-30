@@ -333,8 +333,8 @@ void main() {
 //
 //    vec4 raycastResult = raycast(ro, rd);
     
-    fragColor = vec4(texture(rgbMaps[0], gl_FragCoord.xy/screenSize).xyz, 1);
-    return;
+//    fragColor = vec4(texture(rgbMaps[0], gl_FragCoord.xy/screenSize).xyz, 1);
+//    return;
     
     vec2 ndc = (2.0 * (gl_FragCoord.xy/screenSize) - 1.0);
 

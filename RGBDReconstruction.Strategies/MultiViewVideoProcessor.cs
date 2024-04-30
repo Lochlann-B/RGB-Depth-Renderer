@@ -34,14 +34,33 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         for (int i = 0; i < _numCams; i++)
         {
             var fileName = GetVideoFileName(i + 1, ".mkv", "");
-            var videoStreamHandler = new VideoStreamHandler();
-            videoStreamHandler.Initialize(fileName);
-            _videoStreamHandlersRGB.Add(videoStreamHandler);
-            // TODO: Add depth
+            var idx = i;
+            Task.Run((() =>
+            {
+                var videoStreamHandler = new VideoStreamHandler();
+                videoStreamHandler.Initialize(fileName);
+                _videoStreamHandlersRGB.Add(videoStreamHandler);
+                // LoadFramesDepthAsync();
+                LoadFramesFromVideoStream(videoStreamHandler, idx, _videoFramesRGB);
+                
+                // TODO: Add depth
+            }));
+
+            Task.Run((() =>
+            {
+                // TODO: Change filename to a depth video
+                var videoStreamHandler = new VideoStreamHandler();
+                videoStreamHandler.Initialize(fileName);
+                _videoStreamHandlersDepth.Add(videoStreamHandler);
+                LoadFramesFromVideoStream(videoStreamHandler, idx, _videoFramesDepth);
+                // LoadFramesDepthAsync();
+                // LoadFramesRGBAsync();
+            }));
+
         }
     }
 
-    public unsafe (IntPtr,IntPtr)[] GetFirstVideoFrame()
+    public async unsafe Task<(IntPtr,IntPtr)[]> Begin()
     {
         var res = new (IntPtr, IntPtr)[_numCams];
         for (int i = 0; i < _numCams; i++)
@@ -50,8 +69,22 @@ public class MultiViewVideoProcessor : MultiViewProcessor
             // TODO: Add depth to 2nd argument
             res[i] = (data, data);
         }
-
+        
         return res;
+    }
+
+    public (IntPtr, IntPtr)[]? AwaitNextFrame()
+    {
+        while (true)
+        {
+            var res = GetNextAvailableVideoFrame();
+            if (res is null)
+            {
+                continue;
+            }
+
+            return res;
+        }
     }
 
     public (IntPtr, IntPtr)[]? GetNextAvailableVideoFrame()
@@ -66,17 +99,24 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         {
             _videoFramesRGB[i].TryDequeue(out var rgbData);
             _videoFramesDepth[i].TryDequeue(out var depthData);
+
+            if (rgbData.Value == IntPtr.Zero)
+            {
+                var egg = true;
+            }
+            
             frameData[i] = (rgbData.Value, depthData.Value);
         }
 
         return frameData;
     }
+    
 
     private bool NextFrameDataPreparedForAllCameras()
     {
         var isReady = true;
 
-        for (int i = 0; i < _videoStreamHandlersRGB.Count; i++)
+        for (int i = 0; i < _numCams; i++)
         {
             var _RGBFrameData = _videoFramesRGB[i];
             var _depthFrameData = _videoFramesDepth[i];
@@ -84,16 +124,55 @@ public class MultiViewVideoProcessor : MultiViewProcessor
             // isReady = isReady && !((_videoFramesRGB[i].Count < 20 || _videoFramesDepth[i].Count < 20) &&
             //                        _nextFrameToReturn == 1);
 
-            isReady = isReady && !(!_videoFramesRGB[i].TryPeek(out var _) || !_videoFramesDepth[i].TryPeek(out var _));
-        
+            isReady = isReady && !(_videoFramesDepth[i].IsEmpty) && !_videoFramesRGB[i].IsEmpty;
+
+            var rgbPeek = _videoFramesRGB[i].TryPeek(out var rgb);
+
+            var depthPeek = _videoFramesDepth[i].TryPeek(out var depth);
+            
+            isReady = isReady && !(!rgbPeek || !depthPeek);
+
+            isReady = isReady && rgb.Value != 0 && depth.Value != 0;
+
             // _RGBFrameData.TryPeek(out var rgb);
             // isReady = isReady && rgb.Key == _nextFrameToReturn;
             //
             // _depthFrameData.TryPeek(out var depth);
             // isReady = isReady && (depth.Key == _nextFrameToReturn);
+
         }
 
         return isReady;
+    }
+
+    private unsafe void LoadFramesFromVideoStream(VideoStreamHandler vidStreamHandler, int idx, ConcurrentPriorityQueue<int, IntPtr>[] queues)
+    {
+        var hasNextFrame = true;
+        try
+        {
+            while (hasNextFrame)
+            {
+                if (queues[idx].Count > _maxFrameDataSize)
+                {
+                    continue;
+                }
+                
+                int frameIdx = Interlocked.Increment(ref _currentFrameDepth) - 1;
+
+                // TODO :Add depth
+                var data = new IntPtr(vidStreamHandler.GetNextFrame()->data[0]);
+                if (data == IntPtr.Zero)
+                {
+                    hasNextFrame = false;
+                    break;
+                }
+                queues[idx].Enqueue(frameIdx,data);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("All depth video frames loaded or error: " + e);
+        }
     }
 
     public new unsafe void LoadFramesDepthAsync()
