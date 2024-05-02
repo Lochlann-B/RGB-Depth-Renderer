@@ -60,6 +60,48 @@ out vec4 fragColor;
 //    o_color = vec4(shaded_color, 1.0);
 //}
 
+float unpackDepthFromRG(vec2 RG) {
+    int RBits = int(RG.x*255);
+    int GBits = int(RG.y*255);
+    
+    uint packedValue = (RBits << 8) | GBits;
+    // R is the upper 8 bits and G is the lower 8 bits
+//    return intBitsToFloat((RBits << 8) + (GBits));
+
+    uint exponent = (packedValue >> 10) & 0x1Fu;
+    uint mantissa = packedValue & 0x3FFu;
+    
+    int exp_real;
+    int sign = packedValue >> 15 == 1 ? 1 : 1;
+    float mant_real = mantissa/1024.0f;
+    
+    if (exponent == 0) {
+        exp_real = -14;
+    } else {
+        mant_real = mant_real + 1;
+        exp_real = int(exponent) - 15;
+    }
+    
+    return sign*ldexp(mant_real, exp_real);
+    
+    float result = 0.0;
+
+    if (exponent == 0) {
+        if (mantissa == 0)
+        result = 0.0;
+        else
+        result = ldexp(float(mantissa) / 1024.0, -14); // Subnormal numbers
+    } else if (exponent == 31) {
+        if (mantissa == 0)
+        result = (packedValue & 0x8000u) != 0 ? -1.0 / 0.0 : 1.0 / 0.0; // Infinites
+        else
+        result = 0.0 / 0.0; // NaNs
+    } else {
+        result = ldexp(float(mantissa) / 1024.0, int(exponent) - 14); // Normal numbers
+    }
+    return (packedValue & 0x8000u) != 0 ? -result : result; // Apply sign bit
+}
+
 float minMagnitude(highp float f1, highp float f2) {
     highp float t1 = f1 < 0 ? f1 * -1 : f1;
     highp float t2 = f2 < 0 ? f2 * -1 : f2;
@@ -76,7 +118,7 @@ vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
 
     vec3 imageCoords = intrinsicMatrix * (p).xyz;
 
-    vec2 coords = vec2(imageCoords.x/imageCoords.z, imageCoords.y/imageCoords.z);
+    vec2 coords = vec2(imageCoords.x/imageCoords.z, 1080 - imageCoords.y/imageCoords.z);
 
     //coords.y = 1080 - coords.y;
 
@@ -86,7 +128,7 @@ vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
         //return vec4(0, 1, 0, 0);
     }
 
-    float depth = texture(depthMap, ivec2(coords)/vec2(1920, 1080)).r;
+    float depth = unpackDepthFromRG(texture(depthMap, ivec2(coords)/vec2(1920, 1080)).rg);
     
 //    if (depth > 1000) {
 //        depth *= -1;
@@ -134,7 +176,7 @@ vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
 
             newImgCoords = intrinsicMatrix * (newP).xyz;
 
-            newCoords = vec2(newImgCoords.x/newImgCoords.z, newImgCoords.y/newImgCoords.z);
+            newCoords = vec2(newImgCoords.x/newImgCoords.z, 1080 - newImgCoords.y/newImgCoords.z);
 
             //coords.y = 1080 - coords.y;
 
@@ -144,7 +186,7 @@ vec3 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
                 //return vec3(0, 0, 0);
             }
 
-            newDepth = texture(depthMap, newCoords/vec2(1920, 1080)).r;
+            newDepth = unpackDepthFromRG(texture(depthMap, newCoords/vec2(1920, 1080)).rg);
             newDist = newP.z - newDepth;
             
             if (sign(UB.z - UBDepth) == sign(newDist)) {
@@ -190,7 +232,7 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
         
         if(abs(smallestS) < threshold && smallestIdx >= 0) {
             // TODO: Do proper colour blending!
-            vec4 pixelColour = texture(depthMaps[smallestIdx], smallestSCoords/vec2(1920, 1080));
+            vec4 pixelColour = texture(rgbMaps[smallestIdx], vec2(smallestSCoords.x, smallestSCoords.y)/vec2(1920, 1080));
             //vec4 pixelColour = vec4(smallestSCoords/vec2(1920,1080), 0,1);
 //            vec4 pixelColour = vec4(1,1,0,1);
             return pixelColour;
@@ -333,7 +375,7 @@ void main() {
 //
 //    vec4 raycastResult = raycast(ro, rd);
     
-//    fragColor = vec4(texture(rgbMaps[0], gl_FragCoord.xy/screenSize).xyz, 1);
+//    fragColor = vec4(texture(depthMaps[1], gl_FragCoord.xy/screenSize).xyz, 1);
 //    return;
     
     vec2 ndc = (2.0 * (gl_FragCoord.xy/screenSize) - 1.0);

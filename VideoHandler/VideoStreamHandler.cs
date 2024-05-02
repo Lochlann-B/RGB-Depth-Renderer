@@ -108,7 +108,7 @@ public unsafe class VideoStreamHandler
         // ffmpeg.av_frame_get_buffer(pFrameRGB, 0);
 
         // Initialize SwsContext for the conversion
-        swsCtx = ffmpeg.sws_getContext(width, height, AVPixelFormat.AV_PIX_FMT_YUV420P,
+        swsCtx = ffmpeg.sws_getContext(width, height, pCodecContext->pix_fmt,
             width, height, AVPixelFormat.AV_PIX_FMT_RGB24,
             ffmpeg.SWS_BILINEAR, null, null, null);
 
@@ -136,6 +136,11 @@ public unsafe class VideoStreamHandler
                     {
                         ffmpeg.av_packet_unref(&packet);
 
+
+                        if (pCodecContext->pix_fmt == AVPixelFormat.AV_PIX_FMT_RGB24)
+                        {
+                            return pFrame;
+                        }
                         var pFrameRGB = GetAVFrame();
                         
                         ffmpeg.sws_scale(swsCtx, pFrame->data, pFrame->linesize, 0, pCodecContext->height, pFrameRGB->data, pFrameRGB->linesize);

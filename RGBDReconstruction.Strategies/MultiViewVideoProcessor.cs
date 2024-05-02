@@ -33,24 +33,25 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         
         for (int i = 0; i < _numCams; i++)
         {
-            var fileName = GetVideoFileName(i + 1, ".mkv", "");
+            var fileNameRGB = GetVideoRGBFileName(i + 1, ".mkv", "");
+            var fileNameDepth = GetVideoDepthFileName(i + 1, ".mkv", "");
             var idx = i;
             Task.Run((() =>
             {
                 var videoStreamHandler = new VideoStreamHandler();
-                videoStreamHandler.Initialize(fileName);
+                videoStreamHandler.Initialize(fileNameRGB);
                 _videoStreamHandlersRGB.Add(videoStreamHandler);
                 // LoadFramesDepthAsync();
                 LoadFramesFromVideoStream(videoStreamHandler, idx, _videoFramesRGB);
                 
-                // TODO: Add depth
+                
             }));
 
             Task.Run((() =>
             {
-                // TODO: Change filename to a depth video
+                
                 var videoStreamHandler = new VideoStreamHandler();
-                videoStreamHandler.Initialize(fileName);
+                videoStreamHandler.Initialize(fileNameDepth);
                 _videoStreamHandlersDepth.Add(videoStreamHandler);
                 LoadFramesFromVideoStream(videoStreamHandler, idx, _videoFramesDepth);
                 // LoadFramesDepthAsync();
@@ -65,9 +66,10 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         var res = new (IntPtr, IntPtr)[_numCams];
         for (int i = 0; i < _numCams; i++)
         {
-            var data = new IntPtr(_videoStreamHandlersRGB[i].GetNextFrame()->data[0]);
+            var dataRGB = new IntPtr(_videoStreamHandlersRGB[i].GetNextFrame()->data[0]);
+            var dataDepth =  new IntPtr(_videoStreamHandlersDepth[i].GetNextFrame()->data[0]);
             // TODO: Add depth to 2nd argument
-            res[i] = (data, data);
+            res[i] = (dataRGB, dataDepth);
         }
         
         return res;
@@ -159,7 +161,7 @@ public class MultiViewVideoProcessor : MultiViewProcessor
                 
                 int frameIdx = Interlocked.Increment(ref _currentFrameDepth) - 1;
 
-                // TODO :Add depth
+             
                 var data = new IntPtr(vidStreamHandler.GetNextFrame()->data[0]);
                 if (data == IntPtr.Zero)
                 {
@@ -248,7 +250,7 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         }
     }
     
-    private String GetVideoFileName(int cam, String extension, String path)
+    private String GetVideoRGBFileName(int cam, String extension, String path)
     {
         var numCamDigits = (int)Math.Floor(Math.Log10(cam)) + 1;
         
@@ -263,5 +265,22 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         camStr += cam.ToString();
 
         return DirectoryPath + "\\cam_" + camStr + "\\rgb_cam_" + camStr + extension;
+    }
+    
+    private String GetVideoDepthFileName(int cam, String extension, String path)
+    {
+        var numCamDigits = (int)Math.Floor(Math.Log10(cam)) + 1;
+        
+        // max is 4 digits
+        var camStr = "";
+        
+        for (int c = 0; c < (3 - numCamDigits); c++)
+        {
+            camStr += "0";
+        }
+
+        camStr += cam.ToString();
+
+        return DirectoryPath + "\\cam_" + camStr + "\\huffyuv_slowest_depth_cam_" + camStr + extension;
     }
 }

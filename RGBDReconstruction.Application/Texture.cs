@@ -185,7 +185,8 @@ public class Texture
     }
 
     public void UpdateWithPointer(IntPtr dataPtr)
-    {
+    { 
+        StbImage.stbi_set_flip_vertically_on_load(1);
         // GL.BindTexture(TextureTarget.Texture2D, _handle);
         // GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Rgb, PixelType.UnsignedByte, dataPtr);
         try
@@ -202,10 +203,12 @@ public class Texture
                 PixelType.UnsignedByte,
                 dataPtr);
 
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
-                (int)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
-                (int)TextureMagFilter.Linear);
+            // GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
+            //     (int)TextureMinFilter.Linear);
+            // GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
+            //     (int)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS,
                 (int)TextureWrapMode.ClampToEdge);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT,
