@@ -81,11 +81,20 @@ public class RaycastReconstruction : IReconstructionApplication
     // Framerate is how many times a new video frame is loaded per second.
 
     private Stopwatch _watch = new();
+    
     private List<(double,double)> _refreshRates = new();
+    private List<double> _rollingRefreshRates = new();
+    private int _windowSizeRefresh = 60;
+    
     private List<(double,double)> _frameRates = new();
+    private List<double> _rollingFrameRates = new();
+    private int _windowSizeFrame = 15;
 
     private double _lastFrameUpdateTime;
 
+    private String _refreshTestName = "r_roll_x_800x600.csv";
+    private String _frameTestName = "f_roll_x_2560x1440.csv";
+    
     private string _refreshRateFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\refresh rates\\";
     private string _frameRatesFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\frame rates\\";
 
@@ -367,14 +376,14 @@ public class RaycastReconstruction : IReconstructionApplication
         //_rgbTexture.Use(TextureUnit.Texture1);
         
         _raycastShader.Use();
-        _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
+        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
         
         // Console.WriteLine("Cpose: ");
         // Console.WriteLine(cpose);
         // Console.WriteLine("View: ");
         // Console.WriteLine(_view);
         // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _cPose);
-        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _animPose);
+        _raycastShader.SetUniformMatrix4f("viewMatrix", ref _animPose);
         _raycastShader.SetUniformMatrix4f("inverseProjectionMatrix", ref _projectionInv);
         _raycastShader.SetUniformVec2("screenSize", ref _screenSize);
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
@@ -400,7 +409,16 @@ public class RaycastReconstruction : IReconstructionApplication
 
         var refreshRate = 1 / dTime;
         
-        _refreshRates.Add((time, refreshRate));
+        _rollingRefreshRates.Add(refreshRate);
+        if (_rollingRefreshRates.Count > _windowSizeRefresh)
+        {
+            _rollingRefreshRates.RemoveAt(0);
+        }
+
+        var rollingRefreshRate = _rollingRefreshRates.Sum()/_rollingRefreshRates.Count;
+        
+        _refreshRates.Add((time, rollingRefreshRate));
+        // _refreshRates.Add((time, refreshRate));
         
         if (updated)
         {
@@ -408,14 +426,23 @@ public class RaycastReconstruction : IReconstructionApplication
             _lastFrameUpdateTime = time;
             var frameRate = 1 / dfTime;
             
-            _frameRates.Add((time, frameRate));
+            _rollingFrameRates.Add(frameRate);
+            if (_rollingFrameRates.Count > _windowSizeFrame)
+            {
+                _rollingFrameRates.RemoveAt(0);
+            }
+
+            var rollingFrameRate = _rollingFrameRates.Sum()/_rollingFrameRates.Count;
+            
+            _frameRates.Add((time, rollingFrameRate));
+            // _frameRates.Add((time, frameRate));
             
             _vidFrame++;
             var filePath =
                 _evalPath;
-            filePath += "\\trunc_1em1_thresh_1em3\\vidFrame_" + _vidFrame + ".png";
+            filePath += "\\trunc_5em3_thresh_1em3\\vidFrame_" + _vidFrame + ".png";
             
-            // UpdateAnimation();
+            UpdateAnimation();
             
             // CaptureScreenToFile(filePath);
         }
@@ -435,6 +462,17 @@ public class RaycastReconstruction : IReconstructionApplication
             {
                 writer.WriteLine($"{x},{y}");
             }
+        }
+
+        using (StreamWriter avgs = new StreamWriter(filepath + filename + "_avgs.txt"))
+        {
+            var vals = data.Select((a) => a.Item2);
+            var min = vals.Min();
+            var max = vals.Max();
+            var avg = vals.Average();
+            avgs.WriteLine($"min,f{min}");
+            avgs.WriteLine($"max,f{max}");
+            avgs.WriteLine($"avg,f{avg}");
         }
         Console.WriteLine("Saved CSV file!");
     }
@@ -583,12 +621,12 @@ public class RaycastReconstruction : IReconstructionApplication
         }
         if (keyboardState.IsKeyDown(Keys.R))
         {
-            SaveToCSV(_refreshRates, _refreshRateFilePath, "fullresRefresh.csv");
+            SaveToCSV(_refreshRates, _refreshRateFilePath, _refreshTestName);
         }
 
         if (keyboardState.IsKeyDown(Keys.F))
         {
-            SaveToCSV(_frameRates, _frameRatesFilePath, "fullresFrames.csv");
+            SaveToCSV(_frameRates, _frameRatesFilePath, _frameTestName);
         }
     }
 

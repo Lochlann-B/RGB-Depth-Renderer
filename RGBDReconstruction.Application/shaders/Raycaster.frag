@@ -272,7 +272,7 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
         float newSmallestS = 1/0f;
         
         // Change to number of cameras
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 6; j++) {
             vec4 marchResults = marchRayDepthMap(currentPos, depthMapCamPoses[j], depthMaps[j], rgbMaps[j], smallestS, oldPos, threshold, searchLimit);
             signedDistances[j] = marchResults.z;
             
@@ -417,8 +417,8 @@ void main() {
     
     vec2 ndc = (2.0 * (gl_FragCoord.xy/screenSize) - 1.0);
 
-//    float fov = 0.69111111612;//radians(45.0f);
-    float fov = radians(45.0f);
+    float fov = 0.69111111612;//radians(45.0f);
+//    float fov = radians(45.0f);
 //    float fov = radians(20.75625f); // Example FOV of 45 degrees
     float aspectRatio = screenSize.x / screenSize.y;
     float scale = tan(fov * 0.5);

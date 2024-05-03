@@ -132,7 +132,7 @@ public class MultiViewFramePreparer
             return false;
         }
 
-        _incTime = 0;
+        // _incTime = 0;
   
         UpdateFrames(nextFrameData);
 
