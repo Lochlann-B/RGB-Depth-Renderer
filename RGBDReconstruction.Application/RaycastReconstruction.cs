@@ -81,8 +81,10 @@ public class RaycastReconstruction : IReconstructionApplication
     // Framerate is how many times a new video frame is loaded per second.
 
     private Stopwatch _watch = new();
-    private List<(float,float)> _refreshRates = new();
-    private List<(float,float)> _frameRates = new();
+    private List<(double,double)> _refreshRates = new();
+    private List<(double,double)> _frameRates = new();
+
+    private double _lastFrameUpdateTime;
 
     private string _refreshRateFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\refresh rates\\";
     private string _frameRatesFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\frame rates\\";
@@ -201,7 +203,7 @@ public class RaycastReconstruction : IReconstructionApplication
         // GL.BindTexture(TextureTarget.Texture2D, _depthBufferTexture);
         
         _watch.Start();
-
+        
     }
     
     private Vector4 raycast(Vector3 worldRayStart, Vector3 worldRayDirection, Matrix4 depthMapCamPose, Matrix3 intrinsicMatrix, float[,] depthMap) {
@@ -365,17 +367,21 @@ public class RaycastReconstruction : IReconstructionApplication
         //_rgbTexture.Use(TextureUnit.Texture1);
         
         _raycastShader.Use();
-        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
+        _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
         
         // Console.WriteLine("Cpose: ");
         // Console.WriteLine(cpose);
         // Console.WriteLine("View: ");
         // Console.WriteLine(_view);
         // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _cPose);
-        _raycastShader.SetUniformMatrix4f("viewMatrix", ref _animPose);
+        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _animPose);
         _raycastShader.SetUniformMatrix4f("inverseProjectionMatrix", ref _projectionInv);
         _raycastShader.SetUniformVec2("screenSize", ref _screenSize);
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
+        
+        
+       
+        
         for (int i = 0; i < _depthCamPoses.Count; i++)
         {
             var pose = _depthCamPoses[i];
@@ -389,21 +395,49 @@ public class RaycastReconstruction : IReconstructionApplication
         GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
         _frame++;
         
+        var time = ((double)_watch.Elapsed.TotalMicroseconds)/1000000d;
+        var dTime = args.Time;
+
+        var refreshRate = 1 / dTime;
+        
+        _refreshRates.Add((time, refreshRate));
+        
         if (updated)
         {
+            var dfTime = time - _lastFrameUpdateTime;
+            _lastFrameUpdateTime = time;
+            var frameRate = 1 / dfTime;
+            
+            _frameRates.Add((time, frameRate));
+            
             _vidFrame++;
             var filePath =
                 _evalPath;
             filePath += "\\trunc_1em1_thresh_1em3\\vidFrame_" + _vidFrame + ".png";
             
-            UpdateAnimation();
+            // UpdateAnimation();
             
             // CaptureScreenToFile(filePath);
         }
 
     }
-    
-    public void SaveToCSV(List<float> data, )
+
+    public void SaveToCSV(List<(double, double)> data, String filepath, String filename)
+    {
+        // Create a StreamWriter to write to the file
+        using (StreamWriter writer = new StreamWriter(filepath + filename))
+        {
+            // Optional: Write headers
+            writer.WriteLine("X,Y");
+            
+            // Write data
+            foreach (var (x, y) in data)
+            {
+                writer.WriteLine($"{x},{y}");
+            }
+        }
+        Console.WriteLine("Saved CSV file!");
+    }
 
     public void UpdateAnimation()
     {
@@ -518,11 +552,6 @@ public class RaycastReconstruction : IReconstructionApplication
         }
     }
 
-    public void UpdateTextures()
-    {
-        
-    }
-
     public void Resize(ResizeEventArgs e)
     {
         _width = e.Width;
@@ -552,12 +581,15 @@ public class RaycastReconstruction : IReconstructionApplication
             
             _camera.HandleInput(keyboardState, new Vector2(deltaX, deltaY), _sensitivity, args.Time);
         }
-    }
-    
+        if (keyboardState.IsKeyDown(Keys.R))
+        {
+            SaveToCSV(_refreshRates, _refreshRateFilePath, "fullresRefresh.csv");
+        }
 
-    public void ReconstructScene(int sceneNo, int voxelGridSize)
-    {
-        
+        if (keyboardState.IsKeyDown(Keys.F))
+        {
+            SaveToCSV(_frameRates, _frameRatesFilePath, "fullresFrames.csv");
+        }
     }
 
     public void MouseWheel(MouseWheelEventArgs e)
