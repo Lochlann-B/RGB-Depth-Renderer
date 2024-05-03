@@ -24,8 +24,8 @@ public unsafe class VideoStreamHandler
     private AVFrame* pFrame = null;
     // private AVFrame* pFrameRGB = null;
 
-    private AVFrame*[] pFrameRGBs = new AVFrame*[50];
-    private int maxFrames = 50;
+    private AVFrame*[] pFrameRGBs = new AVFrame*[20];
+    private int maxFrames = 20;
     private int currIdx = 0;
     
     private SwsContext* swsCtx = null;
@@ -92,7 +92,7 @@ public unsafe class VideoStreamHandler
         // hwDeviceCtx = hwDeviceCtxx;
         
         pFrame = ffmpeg.av_frame_alloc();
-        ffmpeg.av_log_set_level(ffmpeg.AV_LOG_DEBUG);
+        // ffmpeg.av_log_set_level(ffmpeg.AV_LOG_DEBUG);
         
         // // Allocate the output frame
         // pFrameRGB = ffmpeg.av_frame_alloc();

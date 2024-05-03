@@ -1,8 +1,13 @@
-﻿using Emgu.CV;
+﻿using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Text.RegularExpressions;
+using Emgu.CV;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
 
 namespace RGBDReconstruction.Application;
 
@@ -31,6 +36,13 @@ public class RaycastReconstruction : IReconstructionApplication
 
     private Matrix3 _intrinsicMatrix;
 
+    private Matrix4 _cPose;
+    private Matrix4 _animPose;
+    
+    private List<int> _keyFrames = new List<int>();
+    private List<Vector3> _positionsAtKeyFrames = new List<Vector3>();
+    private List<Vector3> _rotationsAtKeyFrames = new List<Vector3>();
+
     private static readonly float[] _quadVerts =
     [
         -1f, -1f, 
@@ -54,12 +66,26 @@ public class RaycastReconstruction : IReconstructionApplication
     // private Matrix4 _depthMapCamPose2;
 
     private int _frame = 1;
+    private int _vidFrame = 1;
+    
+    private string _evalPath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\virtualcam_samepos_asdatacam\\cam1\\";
+    private string _keyFrameText = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\testcamkeyframes.txt";
 
     // private double _elapsedTime = 0d;
 
     private MultiViewFramePreparer _framePreparer;
 
     private List<Matrix4> _depthCamPoses;
+    
+    // Refresh rate is the fps of the application itself.
+    // Framerate is how many times a new video frame is loaded per second.
+
+    private Stopwatch _watch = new();
+    private List<(float,float)> _refreshRates = new();
+    private List<(float,float)> _frameRates = new();
+
+    private string _refreshRateFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\refresh rates\\";
+    private string _frameRatesFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\frame rates\\";
 
     public void Init(int windowWidth, int windowHeight)
     {
@@ -117,6 +143,20 @@ public class RaycastReconstruction : IReconstructionApplication
         _framePreparer.InitVideoTextures();
 
         _depthCamPoses = _framePreparer.DepthCamPoses;
+        
+        var cpose = _depthCamPoses[0];
+        // Console.WriteLine(_depthCamPoses[5]);
+        // cpose.Transpose();
+        cpose = cpose.Inverted();
+        cpose.Transpose();
+        cpose[0, 0] *= -1;
+        cpose[1, 1] *= -1;
+
+        _cPose = cpose;
+        
+        GetTestCamAnimationData(_keyFrameText);
+        
+        UpdateAnimation();
 
         // _viewProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\chain_collision");
         // Task.Run(() => _viewProcessor.LoadFramesRGBAsync());
@@ -159,6 +199,8 @@ public class RaycastReconstruction : IReconstructionApplication
         // GL.ActiveTexture(TextureUnit.Texture0);
         // //GL.BindImageTexture(0, _depthBufferTexture, 0, false, 0, TextureAccess.ReadOnly, SizedInternalFormat.R32f); 
         // GL.BindTexture(TextureTarget.Texture2D, _depthBufferTexture);
+        
+        _watch.Start();
 
     }
     
@@ -299,7 +341,8 @@ public class RaycastReconstruction : IReconstructionApplication
         
         
         
-        _framePreparer.TryUpdateNextVideoFrames(args.Time);
+        var updated = _framePreparer.TryUpdateNextVideoFrames(args.Time);
+
         
         
         
@@ -322,7 +365,14 @@ public class RaycastReconstruction : IReconstructionApplication
         //_rgbTexture.Use(TextureUnit.Texture1);
         
         _raycastShader.Use();
-        _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
+        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
+        
+        // Console.WriteLine("Cpose: ");
+        // Console.WriteLine(cpose);
+        // Console.WriteLine("View: ");
+        // Console.WriteLine(_view);
+        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _cPose);
+        _raycastShader.SetUniformMatrix4f("viewMatrix", ref _animPose);
         _raycastShader.SetUniformMatrix4f("inverseProjectionMatrix", ref _projectionInv);
         _raycastShader.SetUniformVec2("screenSize", ref _screenSize);
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
@@ -338,6 +388,134 @@ public class RaycastReconstruction : IReconstructionApplication
         
         GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
         _frame++;
+        
+        if (updated)
+        {
+            _vidFrame++;
+            var filePath =
+                _evalPath;
+            filePath += "\\trunc_1em1_thresh_1em3\\vidFrame_" + _vidFrame + ".png";
+            
+            UpdateAnimation();
+            
+            // CaptureScreenToFile(filePath);
+        }
+
+    }
+    
+    public void SaveToCSV(List<float> data, )
+
+    public void UpdateAnimation()
+    {
+        
+
+        for (int i = 0; i < _keyFrames.Count-1; i++)
+        {
+            if (_keyFrames[i] <= _vidFrame && _keyFrames[i + 1] > _vidFrame)
+            {
+                var LBPos = _positionsAtKeyFrames[i];
+                var UBPos = _positionsAtKeyFrames[i + 1];
+
+                var LBRot = _rotationsAtKeyFrames[i];
+                var UBRot = _rotationsAtKeyFrames[i + 1];
+
+                var LBFrame = _keyFrames[i];
+                var UBFrame = _keyFrames[i + 1];
+
+                var interpVal = (_vidFrame - LBFrame) / (float)(UBFrame - LBFrame);
+
+                var interpPos = LBPos + interpVal * (UBPos - LBPos);
+                var interpRot = LBRot + interpVal * (UBRot - LBRot);
+
+                var T = Matrix4.CreateTranslation(interpPos.Xzy);
+                var Rx = Matrix4.CreateRotationX((float)Math.PI*(interpRot.X+90f)/180f);
+                var Ry = Matrix4.CreateRotationY((float)Math.PI*(-interpRot.Z+180f)/180f);
+                var Rz = Matrix4.CreateRotationZ((float)Math.PI*interpRot.Y/180f);
+
+                _animPose = Rx * Ry * Rz * T;
+                _animPose.Transpose();
+                // _animPose = _animPose.Inverted();
+                
+                break;
+            }
+        }
+    }
+
+    private void GetTestCamAnimationData(string filepath)
+    {
+        var lines = File.ReadAllLines(filepath);
+        
+
+        var pos = new Vector3();
+        var rot = new Vector3();
+        for (int i = 0; i < lines.Length; i++)
+        {
+            
+            if (i % 7 == 0 || i == 0)
+            {
+                var frame = int.TryParse(lines[i], out var frameNum);
+                if (frame)
+                {
+                    _keyFrames.Add(frameNum);
+                }
+
+                if (i > 0)
+                {
+                    _positionsAtKeyFrames.Add(pos);
+                    _rotationsAtKeyFrames.Add(rot);
+                    pos = new Vector3();
+                    rot = new Vector3();
+                }
+            }
+            else if (i % 7 > 0 && i % 7 < 4)
+            {
+                var parsed = float.TryParse(lines[i], out var coord);
+                if (parsed)
+                    pos[(i % 7)-1] = coord;
+            }
+            else
+            {
+                var parsed = float.TryParse(lines[i], out var angle);
+                if (parsed)
+                    rot[(i % 7) - 4] = angle;
+            }
+        }
+        _positionsAtKeyFrames.Add(pos);
+        _rotationsAtKeyFrames.Add(rot);
+    }
+    
+    
+    private void CaptureScreenToFile(string filename)
+    {
+        int width = _width;
+        int height = _height;
+
+        // Create an array to hold the pixel data
+        byte[] data = new byte[width * height * 4];  // 4 bytes for RGBA
+
+        // Read the pixels from the framebuffer
+        GL.ReadPixels(0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+        // Swap R and B channels
+        for (int i = 0; i < width * height * 4; i += 4)
+        {
+            (data[i], data[i + 2]) = (data[i + 2], data[i]);
+        }
+        // Use Bitmap to save the data as a PNG
+        using (Bitmap bmp = new Bitmap(width, height))
+        {
+            // Lock the bitmap's bits
+            BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            // Get the address of the first line
+            System.Runtime.InteropServices.Marshal.Copy(data, 0, bmpData.Scan0, data.Length);
+
+            // Unlock the bits
+            bmp.UnlockBits(bmpData);
+
+            // Save the bitmap as a PNG file
+            bmp.RotateFlip(RotateFlipType.RotateNoneFlipY); // Optional: Flip the image vertically
+            bmp.Save(filename, ImageFormat.Png);
+        }
     }
 
     public void UpdateTextures()

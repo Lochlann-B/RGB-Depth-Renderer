@@ -264,7 +264,14 @@ public class MultiViewVideoProcessor : MultiViewProcessor
 
         camStr += cam.ToString();
 
-        return DirectoryPath + "\\cam_" + camStr + "\\rgb_cam_" + camStr + extension;
+        // if (cam == 1)
+        // {
+            return DirectoryPath + "\\cam_" + camStr + "\\huffyuv_slowest_rgb_cam_" + camStr + extension;
+        // }
+        // else
+        // {
+            // return DirectoryPath + "\\cam_" + camStr + "\\rgb_cam_" + camStr + extension;
+        // }
     }
     
     private String GetVideoDepthFileName(int cam, String extension, String path)

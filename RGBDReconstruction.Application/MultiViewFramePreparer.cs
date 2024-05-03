@@ -117,19 +117,19 @@ public class MultiViewFramePreparer
         }
     }
     
-    public void TryUpdateNextVideoFrames(double elapsedTime)
+    public bool TryUpdateNextVideoFrames(double elapsedTime)
     {
         _elapsedTimeSinceLastFrame += elapsedTime * _incTime;
 
         if (_elapsedTimeSinceLastFrame < 1 / 60d)
         {
-            return;
+            return false;
         }
 
         var nextFrameData = _viewVidProcessor.GetNextAvailableVideoFrame();
         if (nextFrameData is null)
         {
-            return;
+            return false;
         }
 
         _incTime = 0;
@@ -138,6 +138,8 @@ public class MultiViewFramePreparer
 
         _elapsedTimeSinceLastFrame = 0d;
         _incTime = 1;
+
+        return true;
     }
 
     public void TryUpdateNextFrames(double elapsedTime)
@@ -203,8 +205,8 @@ public class MultiViewFramePreparer
             var rgb = nextFrameData[i].Item1;
             var depth = nextFrameData[i].Item2;
             
-            _rgbTextures[i].UpdateWithPointer(rgb);
-            _depthTextures[i].UpdateWithPointer(depth);
+            _rgbTextures[i].UpdateWithPointer(rgb, false);
+            _depthTextures[i].UpdateWithPointer(depth, true);
         }
     }
 }
