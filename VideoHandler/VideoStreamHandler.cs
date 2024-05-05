@@ -24,8 +24,8 @@ public unsafe class VideoStreamHandler
     private AVFrame* pFrame = null;
     // private AVFrame* pFrameRGB = null;
 
-    private AVFrame*[] pFrameRGBs = new AVFrame*[7];
-    private int maxFrames = 7;
+    private AVFrame*[] pFrameRGBs = new AVFrame*[5];
+    private int maxFrames = 5;
     private int currIdx = 0;
     
     private SwsContext* swsCtx = null;

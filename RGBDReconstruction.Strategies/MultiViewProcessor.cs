@@ -20,7 +20,7 @@ public class MultiViewProcessor(String directoryPath)
     private SemaphoreSlim _semaphoreRGB = new(12);
     private SemaphoreSlim _semaphoreDepth = new(12);
 
-    protected int _maxFrameDataSize = 5;
+    protected int _maxFrameDataSize = 1;
 
     // private int[] _currentFrameRGBs;
     // private int[] _currentFrameDepths;

@@ -61,6 +61,8 @@ void writeTriangleData(vec3 v1, vec3 v2, vec3 v3, ivec3 nv1, ivec3 nv2, ivec3 nv
 
     for(int i = 0; i < 3; i++) {
         vec3 pos = tri1[i];
+        pos.z *= -1;
+        pos.x *= -1;
         
         // UV Coordinate is a simple xy plane projection
         vec2 texCoord = vec2((fy*pos.x/pos.z + cy)/height, (fx*pos.y/pos.z + cx)/width);
@@ -197,6 +199,7 @@ void main()
     
     mat4 rotation = transpose(transformationMatrix);
     vec4 translation = vec4(rotation[3][0], rotation[3][1], rotation[3][2], 0f);
+//    vec4 translation = vec4(0);
     rotation[3][0] = 0f;
     rotation[3][1] = 0f;
     rotation[3][2] = 0f;

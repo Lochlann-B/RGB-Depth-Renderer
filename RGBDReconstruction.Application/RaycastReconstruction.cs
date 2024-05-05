@@ -83,6 +83,7 @@ public class RaycastReconstruction : IReconstructionApplication
     private Stopwatch _watch = new();
     
     private List<(double,double)> _refreshRates = new();
+    // private List<double> _refreshRatesRaw = new();
     private List<double> _rollingRefreshRates = new();
     private int _windowSizeRefresh = 60;
     
@@ -92,8 +93,8 @@ public class RaycastReconstruction : IReconstructionApplication
 
     private double _lastFrameUpdateTime;
 
-    private String _refreshTestName = "r_roll_x_800x600.csv";
-    private String _frameTestName = "f_roll_x_2560x1440.csv";
+    private String _refreshTestName = "r_rootsearch_3.csv";
+    private String _frameTestName = "f_rootsearch_3.csv";
     
     private string _refreshRateFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\refresh rates\\";
     private string _frameRatesFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\frame rates\\";
@@ -440,7 +441,7 @@ public class RaycastReconstruction : IReconstructionApplication
             _vidFrame++;
             var filePath =
                 _evalPath;
-            filePath += "\\trunc_5em3_thresh_1em3\\vidFrame_" + _vidFrame + ".png";
+            filePath += "\\rootsearch\\vidFrame_" + _vidFrame + ".png";
             
             UpdateAnimation();
             

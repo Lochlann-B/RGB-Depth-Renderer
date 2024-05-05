@@ -242,7 +242,8 @@ public class DepthTessellator
 
         computeShader.SetUniformInt("xres", xres);
         computeShader.SetUniformInt("yres", yres);
-        computeShader.SetUniformMatrix4f("transformationMatrix", ref invCameraPose);
+        var invinvcampose = invCameraPose.Inverted();
+        computeShader.SetUniformMatrix4f("transformationMatrix", ref invinvcampose);
 
         // Generate buffer handles
         int indexBufferHandle = GL.GenBuffer();

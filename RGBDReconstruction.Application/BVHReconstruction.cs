@@ -58,7 +58,7 @@ public class BVHReconstruction : IReconstructionApplication
         GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
 
 
-        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 200);
+        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 400);
         var mesh = multiViewReconstructor.GetFrameGeometry(1);
         var contiguousMeshData = mesh.GetContiguousMeshData();
         
@@ -123,6 +123,9 @@ public class BVHReconstruction : IReconstructionApplication
     public void RenderFrame(FrameEventArgs args)
     {
         _view = _camera.LookAt;
+        _view[3, 0] *= -1;
+        _view[3, 1] *= -1;
+        _view[3, 2] *= -1;
         _projection = _camera.CameraProjectionMatrix;
 
         

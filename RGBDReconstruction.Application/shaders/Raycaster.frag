@@ -165,7 +165,7 @@ vec4 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
         vec3 newImgCoords;
         float newDepth;
         float newDist;
-        
+
         vec3 LBImg = intrinsicMatrix*LB;
         //float LBDepth = texture(depthMap, vec2(LBImg.x/LBImg.z, LBImg.y/LBImg.z)/vec2(1920, 1080)).r;
         float UBDepth = depth;
@@ -189,7 +189,7 @@ vec4 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
 
             newDepth = unpackDepthFromRG(texture(depthMap, newCoords/vec2(1920, 1080)).rg);
             newDist = newP.z - newDepth;
-            
+
             if (sign(UB.z - UBDepth) == sign(newDist)) {
                 UB = avg;
                 UBDepth = newDepth;
@@ -204,8 +204,8 @@ vec4 marchRayDepthMap(vec3 worldPos, mat4 depthMapPose, sampler2D depthMap, samp
                 outDepth = newDepth;
 //                break;
             }
-            
-            
+
+
 
 //            dist = newDist * -sign(newDist);
         }
@@ -224,6 +224,8 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
     bool anyIntersection = false;
 
     float truncDist = 0.02f;
+    float truncDistMultiplier = 1f;
+    bool inVoid = false;
     int maxIters = 1000;
     float smallestS = -truncDist;
     float threshold = 0.001f;
@@ -265,7 +267,12 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
             return pixelColour;
         }
         
-        smallestS = clamp(smallestS, -truncDist, truncDist);
+//        if (inVoid) {
+//            smallestS = truncDistMultiplier*0.1f;//clamp(smallestS, -truncDist*truncDistMultiplier, truncDist*truncDistMultiplier);
+////            return vec4(1,0,0,1);
+//        } else {
+            smallestS = clamp(smallestS, -truncDist, truncDist);
+//        }
         oldPos = vec3(currentPos);
         currentPos = currentPos + smallestS * 0.8f * worldRayDirection;
         
@@ -292,8 +299,13 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
             }
         }
         
-        if (newSmallestS < 1/0f) {
+        if (abs(newSmallestS) < 3f) {
             smallestS = newSmallestS;
+            inVoid = false;
+        } else { 
+//            inVoid = true; 
+//            truncDistMultiplier = newSmallestS > 65000 ? -1 : sign(newSmallestS);
+            
         }
     }
 
@@ -379,6 +391,7 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
 //}
 
 void main() {
+    
 //    if(texture(depthMap, gl_FragCoord.xy / screenSize).r >= 1.0f) {
 //        fragColor = vec4(1,0,0,1);
 //        return;
