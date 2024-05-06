@@ -319,18 +319,21 @@ void main() {
         
         
         // get colour
-        vec4 viewPos = camPose * vec4(voxel, 1.0f);
+        vec4 viewPos = inverse(camPose) * vec4(voxel, 1.0f);
         vec3 pixelPos = intrinsicMatrix * viewPos.xyz;
         pixelPos /= pixelPos.z;
         
         vec2 imgCoord = pixelPos.xy;
+
+//        voxelColours[voxIdx] = vec4(1,0,0,1);//(voxelColours[voxIdx]*W + weight*texture(rgbMap, imgCoord))/(W + weight);
+//        voxelColours[voxIdx].w = 1.0f;
         
         if (imgCoord.x < 0 || imgCoord.y < 0 || imgCoord.x >= 1920 || imgCoord.y >= 1920) {
             return;
         }
-        
         voxelColours[voxIdx] = (voxelColours[voxIdx]*W + weight*texture(rgbMap, imgCoord))/(W + weight);
         voxelColours[voxIdx].w = 1.0f;
+        
         //atomicCounterIncrement(closeVoxelsIdx);
     }
 }

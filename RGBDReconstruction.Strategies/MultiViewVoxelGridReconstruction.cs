@@ -70,7 +70,7 @@ public class MultiViewVoxelGridReconstruction
         // 2. for each camera:
         // b. get camera transformation data
         // c. update voxel grid
-        for (int j = 0; j < numCams; j++)
+        for (int j = 0; j < numCams-5; j++)
         {
             // if (j > 1)
             // {

@@ -53,10 +53,23 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         
         int rgbBufferTexture = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, rgbBufferTexture);
-        GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, width,
-            height);
-        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, width, height,
-            PixelFormat.Rgba, PixelType.Float, rgbData);
+        // GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, width,
+        //     height);
+        GL.TexImage2D(TextureTarget.Texture2D, 
+            0, 
+            PixelInternalFormat.Rgba, 
+            width, 
+            height, 
+            0, 
+            PixelFormat.Rgba, 
+            PixelType.UnsignedByte, 
+            rgbData);
+        
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+        
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
         
         var focalLength = 50f;
         var sensorWidth = 36f;
