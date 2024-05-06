@@ -58,7 +58,7 @@ public class BVHReconstruction : IReconstructionApplication
         GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
 
 
-        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 400);
+        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 500);
         var mesh = multiViewReconstructor.GetFrameGeometry(1);
         var contiguousMeshData = mesh.GetContiguousMeshData();
         

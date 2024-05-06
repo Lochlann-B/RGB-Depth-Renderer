@@ -48,6 +48,10 @@ layout (std430, binding = 7) buffer voxelWeightsBuffer {
     highp float voxelWeights[];
 };
 
+//layout (std430, binding = 8) buffer voxelColoursBuffer {
+//    highp vec4 voxelColours[];
+//};
+
 uniform int numObjs;
 
 uniform highp float resolution;
@@ -62,6 +66,8 @@ uniform highp vec3 cameraPos;
 
 uniform int groupSize;
 uniform int groupIdx;
+
+//uniform sampler2D rgbMap;
 
 double roundToInterval(double v, double interval) {
     if (interval == 0f) {
@@ -267,7 +273,8 @@ void main() {
         if (isLeaf) {
             Triangle triangle = getTriangleFromNode(node);
             vec4 point = rayIntersectsTriangle(raySource, rayDirection, triangle);
-            float currWeight = 1f; //abs(dot(getNormal(triangle.v1, triangle.v2, triangle.v3), rayDirection));
+//            float currWeight = 1f; //abs(dot(getNormal(triangle.v1, triangle.v2, triangle.v3), rayDirection));
+            float currWeight = dot(getNormal(triangle.v1, triangle.v2, triangle.v3), rayDirection);
             if (point.w != 0) {
                 vec3 nPoint = point.xyz;
                 highp float dist = distance(nPoint, voxel);
@@ -305,8 +312,9 @@ void main() {
        // voxelValues[int((voxel.x - xStart)/resolution) + int((voxel.y - yStart)/resolution) * size + size * size * int((voxel.z - zStart)/resolution)] = minDist;
         int voxIdx = index(voxel.x, voxel.y, voxel.z);
         highp float W = voxelWeights[voxIdx];
-        voxelValues[voxIdx] = (W*voxelValues[voxIdx] + weight * minDist)/(W + weight);
+        voxelValues[voxIdx] = (W*voxelValues[voxIdx] +  weight * minDist)/(W + weight);
         voxelWeights[voxIdx] = W + weight;
+        
         //atomicCounterIncrement(closeVoxelsIdx);
     }
 }

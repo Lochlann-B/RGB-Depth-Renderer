@@ -115,7 +115,7 @@ public class DepthTessellator
     }
 
 
-    public static Mesh nTessellateDepthArray(float[,] depthMap)
+    public static Mesh nTessellateDepthArray(float[,] depthMap, Matrix4 camPose)
     {
         int xres = 4;
         int yres = 4;
@@ -148,21 +148,30 @@ public class DepthTessellator
         int cx = (maxX + 1) / 2;
         int cy = (maxY + 1) / 2;
         float fx = GetFocal(50f, 36f, 1920f);
-        float fy = GetFocal(28.125f, 36 * (9 / 16f), 1080f);
+        float fy = fx;//GetFocal(50f, 36f, 1080f);
+
+        var rot = camPose;
+        rot.Transpose();
 
         for (int y = 0; y < maxY; y += yres)
         {
             for (int x = 0; x < maxX; x += xres)
             {
+                if (x == 872 && y == 276)
+                {
+                    var egg = 2;
+                }
+                
+                
                 // Vertices start in the bottom right, and walk anticlockwise around the quad
-                var vertex1 = new Vector3(depthMap[y, x] * ((x - cx) / fx), depthMap[y, x] * ((y - cy) / fy),
-                    depthMap[y, x]);
-                var vertex2 = new Vector3(depthMap[y, x + xres] * ((x + xres - cx) / fx),
-                    depthMap[y, x + xres] * ((y - cy) / fy), depthMap[y, x + xres]);
-                var vertex3 = new Vector3(depthMap[y + yres, x + xres] * ((x + xres - cx) / fx),
-                    depthMap[y + yres, x + xres] * ((y + yres - cy) / fy), depthMap[y + yres, x + xres]);
-                var vertex4 = new Vector3(depthMap[y + yres, x] * ((x - cx) / fx),
-                    depthMap[y + yres, x] * ((y + yres - cy) / fy), depthMap[y + yres, x]);
+                var vertex1 = (rot*(new Vector4(depthMap[y, x] * ((x - cx) / fx), depthMap[y, x] * ((y - cy) / fy),
+                    depthMap[y, x],1f))).Xyz;
+                var vertex2 = (rot*(new Vector4(depthMap[y, x + xres] * ((x + xres - cx) / fx),
+                    depthMap[y, x + xres] * ((y - cy) / fy), depthMap[y, x + xres],1f))).Xyz;
+                var vertex3 = (rot*(new Vector4(depthMap[y + yres, x + xres] * ((x + xres - cx) / fx),
+                    depthMap[y + yres, x + xres] * ((y + yres - cy) / fy), depthMap[y + yres, x + xres],1f))).Xyz;
+                var vertex4 = (rot*(new Vector4(depthMap[y + yres, x] * ((x - cx) / fx),
+                    depthMap[y + yres, x] * ((y + yres - cy) / fy), depthMap[y + yres, x],1f))).Xyz;
 
                 var nvertex1 = new Vector3(x, y, 1);
                 var nvertex2 = new Vector3(x + xres, y, 1);
@@ -180,7 +189,7 @@ public class DepthTessellator
                 for (int i = 0; i < 2; i++)
                 {
                     var triangle = triangles[i];
-                    if (triangle.HasLengthLongerThanThreshold(.1f))
+                    if (triangle.HasLengthLongerThanThreshold(.1f+0.5f))
                     {
                         continue;
                     }
@@ -196,7 +205,7 @@ public class DepthTessellator
                         var vertex = new Vertex(position, normal, texCoord);
 
                         var nPos = nTriangle.GetVerticesAsList()[j];
-                        var idx = (int)(nPos[1] * 1080 + nPos[0]);
+                        var idx = (int)(nPos[1]/yres * 1080/xres + nPos[0]/xres);
 
                         vertexIndices.Add(idx);
                         positions[idx * 3] = position[0];
@@ -242,7 +251,8 @@ public class DepthTessellator
 
         computeShader.SetUniformInt("xres", xres);
         computeShader.SetUniformInt("yres", yres);
-        var invinvcampose = invCameraPose.Inverted();
+        var invinvcampose = invCameraPose;
+        // invinvcampose.Transpose();
         computeShader.SetUniformMatrix4f("transformationMatrix", ref invinvcampose);
 
         // Generate buffer handles

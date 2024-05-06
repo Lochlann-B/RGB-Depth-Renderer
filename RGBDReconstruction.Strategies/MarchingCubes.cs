@@ -33,7 +33,7 @@ public class MarchingCubes
         int cx = (maxX + 1) / 2;
         int cy = (maxY + 1) / 2;
         float fx = DepthTessellator.GetFocal(50f, 36f, 1920f);
-        float fy = DepthTessellator.GetFocal(28.125f, 36*(9/16f), 1080f);
+        float fy = DepthTessellator.GetFocal(50f, 36f, 1080f);
         
         
         var currentIndex = 0;

@@ -46,6 +46,9 @@ public class MultiViewVoxelGridReconstruction
             
             depthMapList.Add(_viewProcessor.GetDepthMap(frameNo, i));
             var mesh = DepthTessellator.TessellateDepthArray(depthMapList[i-1], camPoseList[i-1]);
+
+            // return mesh;
+            
             tessellatedDepthMapList.Add(mesh);
             
             xMin = Math.Min(mesh.xRanges[0], xMin);
