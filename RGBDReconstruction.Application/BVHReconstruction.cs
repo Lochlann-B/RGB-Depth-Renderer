@@ -40,6 +40,8 @@ public class BVHReconstruction : IReconstructionApplication
 
     private Texture _diffuseMap;
     private Texture _specularMap;
+
+    private List<Texture> _textures;
     
     public void Init(int windowWidth, int windowHeight)
     {
@@ -58,8 +60,9 @@ public class BVHReconstruction : IReconstructionApplication
         GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
 
 
-        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 500);
+        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 400);
         var mesh = multiViewReconstructor.GetFrameGeometry(1);
+        // var textureData = multiViewReconstructor.GetRGBData(1);
         var contiguousMeshData = mesh.GetContiguousMeshData();
         
         GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
@@ -76,15 +79,19 @@ public class BVHReconstruction : IReconstructionApplication
         // The 'index' param below refers to the location in the shader program we are putting data into.
         // That is, the layout (location = 0) in shader.vert
         GL.EnableVertexAttribArray(0);
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
+        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, mesh.MeshLayout.Stride * sizeof(float), 0);
 
         var normalLoc = _lightingShader.GetAttribLocation("aNormal");
         GL.EnableVertexAttribArray(normalLoc);
-        GL.VertexAttribPointer(normalLoc, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
+        GL.VertexAttribPointer(normalLoc, 3, VertexAttribPointerType.Float, false, mesh.MeshLayout.Stride * sizeof(float), 3 * sizeof(float));
 
-        var texLoc = _lightingShader.GetAttribLocation("aTexCoords");
-        GL.EnableVertexAttribArray(texLoc);
-        GL.VertexAttribPointer(texLoc, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 6 * sizeof(float));
+        // var texLoc = _lightingShader.GetAttribLocation("aTexCoords");
+        // GL.EnableVertexAttribArray(texLoc);
+        // GL.VertexAttribPointer(texLoc, 2, VertexAttribPointerType.Float, false, mesh.MeshLayout.Stride * sizeof(float), 6 * sizeof(float));
+
+        var colourLoc = _lightingShader.GetAttribLocation("aColour");
+        GL.EnableVertexAttribArray(colourLoc);
+        GL.VertexAttribPointer(colourLoc, 4, VertexAttribPointerType.Float, false, mesh.MeshLayout.Stride * sizeof(float), 6 * sizeof(float));
         
         _elementBufferObject = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
@@ -113,8 +120,17 @@ public class BVHReconstruction : IReconstructionApplication
 
 
         //_diffuseMap = new Texture("./resources/container2.png");
-        _diffuseMap = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
-        _diffuseMap.Use(TextureUnit.Texture0);
+        // _diffuseMap = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
+        // _diffuseMap.Use(TextureUnit.Texture0);
+
+        // var idx = 0;
+        // foreach (var tex in textureData)
+        // {
+        //     var texture = new Texture(tex, 1920, 1080);
+        //     texture.Use(TextureUnit.Texture0 + idx);
+        //     _textures.Add(texture);
+        //     idx++;
+        // }
 
         //_specularMap = new Texture("./resources/container2_specular.png");
         //_specularMap.Use(TextureUnit.Texture1);
@@ -132,7 +148,7 @@ public class BVHReconstruction : IReconstructionApplication
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
         
         GL.BindVertexArray(_vertexArrayObject);
-        _diffuseMap.Use(TextureUnit.Texture0);
+        // _diffuseMap.Use(TextureUnit.Texture0);
 
         
         _lightingShader.Use();

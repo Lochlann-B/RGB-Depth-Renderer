@@ -48,9 +48,9 @@ layout (std430, binding = 7) buffer voxelWeightsBuffer {
     highp float voxelWeights[];
 };
 
-//layout (std430, binding = 8) buffer voxelColoursBuffer {
-//    highp vec4 voxelColours[];
-//};
+layout (std430, binding = 8) buffer voxelColoursBuffer {
+    highp vec4 voxelColours[];
+};
 
 uniform int numObjs;
 
@@ -67,7 +67,9 @@ uniform highp vec3 cameraPos;
 uniform int groupSize;
 uniform int groupIdx;
 
-//uniform sampler2D rgbMap;
+uniform sampler2D rgbMap;
+uniform mat4 camPose;
+uniform mat3 intrinsicMatrix;
 
 double roundToInterval(double v, double interval) {
     if (interval == 0f) {
@@ -315,6 +317,20 @@ void main() {
         voxelValues[voxIdx] = (W*voxelValues[voxIdx] +  weight * minDist)/(W + weight);
         voxelWeights[voxIdx] = W + weight;
         
+        
+        // get colour
+        vec4 viewPos = camPose * vec4(voxel, 1.0f);
+        vec3 pixelPos = intrinsicMatrix * viewPos.xyz;
+        pixelPos /= pixelPos.z;
+        
+        vec2 imgCoord = pixelPos.xy;
+        
+        if (imgCoord.x < 0 || imgCoord.y < 0 || imgCoord.x >= 1920 || imgCoord.y >= 1920) {
+            return;
+        }
+        
+        voxelColours[voxIdx] = (voxelColours[voxIdx]*W + weight*texture(rgbMap, imgCoord))/(W + weight);
+        voxelColours[voxIdx].w = 1.0f;
         //atomicCounterIncrement(closeVoxelsIdx);
     }
 }

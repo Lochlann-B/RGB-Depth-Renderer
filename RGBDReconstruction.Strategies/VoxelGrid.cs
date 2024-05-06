@@ -6,6 +6,8 @@ using Vector3 = OpenTK.Mathematics.Vector3;
 using ILGPU;
 using ILGPU.IR;
 using ILGPU.Runtime;
+using Vector4 = OpenTK.Mathematics.Vector4;
+
 // using SimpleScene.Util.ssBVH;
 
 namespace RGBDReconstruction.Strategies;
@@ -14,6 +16,7 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
 {
     protected float[] _voxelValues = new float[size * size * size];
     protected List<Vector3> _seenVoxels = new();
+    protected Vector4[] _voxelColours = new Vector4[size * size * size];
     protected float[] _voxelWeights = new float[size * size * size];
 
     public void UpdateWithTriangularMesh(Mesh triangularMeshInWorldCoords, Matrix4 cameraPose)
@@ -167,6 +170,11 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
     {
         get => _voxelValues[Index(x, y, z)];
         set => _voxelValues[Index(x, y, z)] = value;
+    }
+
+    public Vector4 GetColour(float x, float y, float z)
+    {
+        return _voxelColours[Index(x, y, z)];
     }
     
     public float this[double x, double y, double z]

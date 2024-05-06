@@ -21,7 +21,7 @@ public class MultiViewVoxelGridReconstruction
         }
     }
 
-    public Mesh GetFrameGeometry(int frameNo)
+    public ColouredMesh GetFrameGeometry(int frameNo)
     {
         // 0. tessellate each depth map to get voxel grid data
         var depthMapList = new List<float[,]>();
@@ -77,15 +77,33 @@ public class MultiViewVoxelGridReconstruction
             //     continue;
             // }
             // TODO: Get camera pose from info
-            currentVoxGrid.UpdateWithTriangularMesh(tessellatedDepthMapList[j], camPoseList[j]);
+            var byteData = _viewProcessor.GetRGBImageData(frameNo, j + 1);
+            currentVoxGrid.UpdateWithTriangularMesh(tessellatedDepthMapList[j], camPoseList[j], byteData, 1920, 1080);
         }
 
         // 3. do marching cubes and return
+        // var focalLength = 50f;
+        // var sensorWidth = 36f;
+        // var width = 1920f;
+        // var height = 1080f;
+        // var cx = width / 2f;
+        // var cy = height / 2f;
+        //
+        // var fx = width * (focalLength / sensorWidth);
+        // var fy = fx;
+        //
+        // var K = new Matrix3(new Vector3(fx, 0, cx), new Vector3(0, fy, cy), new Vector3(0, 0, 1));
+        
         var outputMesh = MarchingCubes.GenerateMeshFromVoxelGrid(currentVoxGrid);
         return outputMesh;
     }
 
-    public Mesh GetNextFrameGeometry()
+    public List<Byte[]> GetRGBData(int frame)
+    {
+        return _viewProcessor.GetRGBImageDataAllCams(frame);
+    }
+
+    public ColouredMesh GetNextFrameGeometry()
     {
         _frame++;
         return GetFrameGeometry(_frame);

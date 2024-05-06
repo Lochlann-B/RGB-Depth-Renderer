@@ -18,4 +18,5 @@ public interface IVoxelGrid
     public float ZStart { get; }
 
     public void UpdateWithTriangularMesh(Mesh triangleMeshInWorldCoords, Matrix4 cameraPose);
+    public Vector4 GetColour(float x, float y, float z);
 }

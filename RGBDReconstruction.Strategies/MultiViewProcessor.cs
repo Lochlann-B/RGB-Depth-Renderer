@@ -250,6 +250,31 @@ public class MultiViewProcessor(String directoryPath)
        //});
     }
 
+    public byte[] GetRGBImageData(int frame, int cam)
+    {
+        var fileStr = GetPNGFileName(frame, cam);
+
+        using var img = File.OpenRead(fileStr);
+        return ImageResult.FromStream(img, ColorComponents.RedGreenBlueAlpha).Data;
+    }
+
+    public List<Byte[]> GetRGBImageDataAllCams(int frame)
+    {
+        var res = new List<Byte[]>();
+
+        for (int i = 0; i < _numCams; i++)
+        {
+            var idx = i + 1;
+
+            var fileStr = GetPNGFileName(frame, idx);
+
+            using var img = File.OpenRead(fileStr);
+            res.Add(ImageResult.FromStream(img, ColorComponents.RedGreenBlueAlpha).Data);
+        }
+
+        return res;
+    }
+
     private async Task LoadFrameDepthAsync(int frameNo, string imgPath, int cam)
     {
         // uses camera 1

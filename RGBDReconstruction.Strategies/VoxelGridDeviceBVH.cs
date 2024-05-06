@@ -17,7 +17,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
     public BVHNode[] BVH { get; set; }
     private ComputeShader _computeShader = new("./ComputeShaders/VoxelGridRayTracer.glsl");
     
-    public new void UpdateWithTriangularMesh(Mesh triangularMeshInWorldCoords, Matrix4 cameraPose)
+    public new void UpdateWithTriangularMesh(Mesh triangularMeshInWorldCoords, Matrix4 cameraPose, byte[] rgbData, int width, int height)
     {
         var indexArray = triangularMeshInWorldCoords.MeshLayout.IndexArray.ToArray();
         var posArray = triangularMeshInWorldCoords.VertexPositions.ToArray();
@@ -31,8 +31,6 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         var seenVoxels = new System.Numerics.Vector4[Size * Size * Size];
         
         var closeVoxels = new HashSet<System.Numerics.Vector4>();
-
-        var currentWeights = new float[Size * Size * Size];
         
         // TODO: Make parallel?
         var watch = new Stopwatch();
@@ -53,6 +51,24 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
        // int numLeaves = (BVH.Length + 1) / 2;
         //int reachableLeaves = HowManyLeafNodes(BVH, numLeaves);
         
+        int rgbBufferTexture = GL.GenTexture();
+        GL.BindTexture(TextureTarget.Texture2D, rgbBufferTexture);
+        GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, width,
+            height);
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, width, height,
+            PixelFormat.Rgba, PixelType.Float, rgbData);
+        
+        var focalLength = 50f;
+        var sensorWidth = 36f;
+        var cx = width / 2f;
+        var cy = height / 2f;
+
+        var fx = width * (focalLength / sensorWidth);
+        var fy = fx;
+
+        var K = new Matrix3(new Vector3(fx, 0, cx), new Vector3(0, fy, cy), new Vector3(0, 0, 1));
+        
+        
         _computeShader.Use();
         
         _computeShader.SetUniformInt("numObjs", (BVH.Length+1)/2);
@@ -62,6 +78,8 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         _computeShader.SetUniformFloat("yStart", YStart);
         _computeShader.SetUniformFloat("zStart", ZStart);
         _computeShader.SetUniformVec3("cameraPos", ref cameraPos);
+        _computeShader.SetUniformMatrix3f("intrinsicMatrix", ref K);
+        _computeShader.SetUniformMatrix4f("camPose", ref cameraPose);
         
         int positionBufferSSBO = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, positionBufferSSBO);
@@ -111,6 +129,12 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 7, voxelWeightBufferSSBO);
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
         
+        int voxelColoursBufferSSBO = GL.GenBuffer();
+        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, voxelColoursBufferSSBO);
+        GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<System.Numerics.Vector4>()*_voxelColours.Length, _voxelColours, BufferUsageHint.StaticDraw);
+        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 8, voxelColoursBufferSSBO);
+        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+        
         // int currentWeightBufferSSBO = GL.GenBuffer();
         // GL.BindBuffer(BufferTarget.ShaderStorageBuffer, currentWeightBufferSSBO);
         // GL.BufferData(BufferTarget.ShaderStorageBuffer, sizeof(float)*currentWeights.Length, currentWeights, BufferUsageHint.StaticDraw);
@@ -139,6 +163,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.GetNamedBufferSubData(seenVoxelsBufferSSBO, 0, Marshal.SizeOf<System.Numerics.Vector4>() * seenVoxels.Length, ref seenVoxels[0]);
         GL.GetNamedBufferSubData(voxelValuesBufferSSBO, 0, sizeof(float) * _voxelValues.Length, _voxelValues);
        GL.GetNamedBufferSubData(voxelWeightBufferSSBO, 0, sizeof(float)*_voxelWeights.Length, _voxelWeights);
+        GL.GetNamedBufferSubData(voxelColoursBufferSSBO, 0, Marshal.SizeOf<System.Numerics.Vector4>() * _voxelColours.Length, _voxelColours);
         // GL.GetNamedBufferSubData(atomicCounterBufferID, 0, sizeof(int), ref counterValue);
         //GL.CopyBufferSubData();
         //GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);

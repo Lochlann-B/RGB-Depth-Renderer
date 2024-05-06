@@ -7,25 +7,28 @@ namespace RGBDReconstruction.Strategies;
 
 public class MarchingCubes
 {
-    public static Mesh GenerateMeshFromVoxelGrid(IVoxelGrid voxelGrid)
+    public static ColouredMesh GenerateMeshFromVoxelGrid(IVoxelGrid voxelGrid)
     {
         
-        var uniqueVertices = new HashSet<Vertex>();
-        var vertexIndex = new Dictionary<Vertex, int>();
+        var uniqueVertices = new HashSet<ColouredVertex>();
+        var vertexIndex = new Dictionary<ColouredVertex, int>();
 
         var positions = new List<float>();
         var normals = new List<float>();
-        var texCoords = new List<float>();
+        // var texCoords = new List<float>();
         var vertexIndices = new List<int>();
+        var colours = new List<float>();
 
         var posVertexAttribute = new VertexAttribute(0, sizeof(float), 3);
         var normVertexAttribute = new VertexAttribute(3, sizeof(float), 3);
-        var texVertexAttribute = new VertexAttribute(6, sizeof(float), 2);
+        // var texVertexAttribute = new VertexAttribute(6, sizeof(float), 2);
+        var colourVertexAttribute = new VertexAttribute(6, sizeof(float), 4);
         
         var vertexAttribDictionary = new Dictionary<string, VertexAttribute>();
         vertexAttribDictionary["positions"] = posVertexAttribute;
         vertexAttribDictionary["normals"] = normVertexAttribute;
-        vertexAttribDictionary["textureCoordinates"] = texVertexAttribute;
+        // vertexAttribDictionary["textureCoordinates"] = texVertexAttribute;
+        vertexAttribDictionary["colours"] = colourVertexAttribute;
         
         var maxY = 1080;
         var maxX = 1920;
@@ -48,8 +51,10 @@ public class MarchingCubes
             
             foreach (var localTriangleEdgeIdxs in localTrianglesEdgeIdxs)
             {
-                var worldTriangleVertexPositions =
-                    LinearInterpolateTriangleVertices(currentVoxel, voxelGrid, localTriangleEdgeIdxs);
+                var posAndColour = LinearInterpolateTriangleVertices(currentVoxel, voxelGrid, localTriangleEdgeIdxs);
+                var worldTriangleVertexPositions = posAndColour.Item1;
+                var triangleColours = posAndColour.Item2;
+                    
 
                 var cubeNormals = GetVertexNormals(currentVoxel, voxelGrid);
                 var worldTriangleVertexNormals = GetInterpolatedTriangleNormals(cubeNormals, voxelGrid,
@@ -61,10 +66,17 @@ public class MarchingCubes
                     var norm = worldTriangleVertexNormals;
                     var position = new Vector3(pos[l][0], pos[l][1], pos[l][2]);
                     var normal = new Vector3(norm[l][0], norm[l][1], norm[l][2]);
+                    var colour = triangleColours[l][0];
 
                     // UV Coordinate is a simple xy plane projection
-                    var texCoord = new Vector2((fy*position[0]/position[2] + cy)/maxY,(fx*position[1]/position[2] + cx)/maxX);
-                    var vertex = new Vertex(position, normal, texCoord);
+                    // var texCoord = new Vector2((fy*position[0]/position[2] + cy)/maxY,(fx*position[1]/position[2] + cx)/maxX);
+
+                    // var textureCoords = GetTexCoords(position, camPoses, intrinsicMatrix, maxX, maxY);
+
+                    //TODO: Weights
+                    
+                    
+                    var vertex = new ColouredVertex(position, normal, colour);
                     if (uniqueVertices.Contains(vertex))
                     {
                         vertexIndices.Add(vertexIndex[vertex]);
@@ -83,18 +95,46 @@ public class MarchingCubes
                         normals.Add(normal[0]);
                         normals.Add(normal[1]);
                         normals.Add(normal[2]);
-
-                        texCoords.Add(texCoord[0]);
-                        texCoords.Add(texCoord[1]);
+                        
+                        // TODO: Colours
+                        colours.Add(colour[0]);
+                        colours.Add(colour[1]);
+                        colours.Add(colour[2]);
+                        colours.Add(colour[3]);
+                    
+                        // texCoords.Add(texCoord[0]);
+                        // texCoords.Add(texCoord[1]);
                     }
+                    
+                    // single tex coord should be sufficient?
+                    
                 }
                 
             }
         }
         
-        var meshLayout = new MeshLayout(8, vertexIndices.ToArray(), vertexAttribDictionary);
+        var meshLayout = new MeshLayout(10, vertexIndices.ToArray(), vertexAttribDictionary);
 
-        return new Mesh(meshLayout, positions, normals, texCoords);
+        return new ColouredMesh(meshLayout, positions, normals, colours);
+    }
+
+    private static List<Vector2> GetTexCoords(Vector3 pos, List<Matrix4> camPoses, Matrix3 intrinsicMatrix, int maxX, int maxY)
+    {
+        var res = new List<Vector2>();
+        foreach (var pose in camPoses)
+        {
+            var camView = pose * (new Vector4(pos, 1.0f));
+            var pixelCoords = intrinsicMatrix * camView.Xyz;
+
+            pixelCoords /= pixelCoords.Z;
+
+            var texCoords = pixelCoords.Xy / (new Vector2(maxX, maxY));
+            
+            // TODO: add weights?
+            res.Add(texCoords);
+        }
+
+        return res;
     }
 
     private static byte GetCubeVertexConfiguration(Vector3 currentVertexInWorldSpace, IVoxelGrid voxelGrid)
@@ -132,9 +172,10 @@ public class MarchingCubes
     }
 
     // These guys are done per-triangle
-    private static float[][] LinearInterpolateTriangleVertices(Vector3 currentVertexInWorldSpace, IVoxelGrid voxelGrid, int[] edgeIdxs)
+    private static (float[][],Vector4[][]) LinearInterpolateTriangleVertices(Vector3 currentVertexInWorldSpace, IVoxelGrid voxelGrid, int[] edgeIdxs)
     {
         var interpolatedVertexValues = new float[edgeIdxs.Length][];
+        var interpolatedColourValues = new Vector4[edgeIdxs.Length][];
         var idx = 0;
         foreach (var edgeIdx in edgeIdxs)
         {
@@ -156,8 +197,10 @@ public class MarchingCubes
             };
 
             var startVertexValue = voxelGrid[startVertex[0], startVertex[1], startVertex[2]];
+            var startColourValue = voxelGrid.GetColour(startVertex[0], startVertex[1], startVertex[2]);
             
             var endVertexValue = voxelGrid[endVertex[0], endVertex[1], endVertex[2]];
+            var endColourValue = voxelGrid.GetColour(endVertex[0], endVertex[1], endVertex[2]);
 
             var proportion = -startVertexValue / (endVertexValue - startVertexValue);
             interpolatedVertexValues[idx] =
@@ -171,10 +214,17 @@ public class MarchingCubes
                 startVertex[2] + proportion * (endVertex[2] - startVertex[2])
             ];//voxelGrid.Resolution * proportion * endLocalCubeCoord[2]];
 
+            interpolatedColourValues[idx] = 
+            [
+                startColourValue +
+                proportion *
+                (endColourValue - startColourValue), //voxelGrid.Resolution * proportion * endLocalCubeCoord[0],
+            ];
+
             idx++;
         }
 
-        return interpolatedVertexValues;
+        return (interpolatedVertexValues, interpolatedColourValues);
     }
 
     private static float[][] GetVertexNormals(Vector3 currentVertexInWorldSpace, IVoxelGrid voxelGrid)
