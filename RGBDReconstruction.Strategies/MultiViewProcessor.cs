@@ -292,7 +292,7 @@ public class MultiViewProcessor(String directoryPath)
         
     }
 
-    public List<Matrix4> GetCameraPoseInformation()
+    public List<Matrix4> GetCameraPoseInformation(bool isVoxel)
     {
         // int numesleft = 2;
         string filePath = directoryPath + "/camera_poses.txt";
@@ -336,33 +336,41 @@ public class MultiViewProcessor(String directoryPath)
                     case "e":
                         // numesleft--;
                         
-                        // var Rx = Matrix4.CreateRotationX((float)Math.PI*(rx-90f)/180f);
-                        // var Ry = Matrix4.CreateRotationY((float)Math.PI*(rz)/180f);
-                        // var Rz = Matrix4.CreateRotationZ((float)Math.PI*ry/180f);
-                        // var T = Matrix4.CreateTranslation(new Vector3(px, pz, py));
-                        // var rot = Rz * Ry * Rx;
-                        // var R = rot.Inverted() * T;
-                        // //var R = T;
-                        // //R[2,2] *= -1;
-                        // list.Add(R.Inverted());
                         
-                        var Rx = Matrix4.CreateRotationX(-(float)Math.PI*((-rx)+90f)/180f);
 
-                        // float angle = -5f;
-                        // float radian = angle * (float)Math.PI / 180f;
-                        // var RotX = new Matrix4(new Vector4(1, 0, 0, 0),
-                        //     new Vector4(0, (float)Math.Cos(radian), (float)-Math.Sin(radian),0),
-                        //     new Vector4(0, (float)Math.Sin(radian), (float)Math.Cos(radian),0),
-                        //     new Vector4(0,0,0,0));
+                        if (isVoxel)
+                        {
+                            var Rx = Matrix4.CreateRotationX(-(float)Math.PI*((-rx)+90f)/180f);
+
+                            // float angle = -5f;
+                            // float radian = angle * (float)Math.PI / 180f;
+                            // var RotX = new Matrix4(new Vector4(1, 0, 0, 0),
+                            //     new Vector4(0, (float)Math.Cos(radian), (float)-Math.Sin(radian),0),
+                            //     new Vector4(0, (float)Math.Sin(radian), (float)Math.Cos(radian),0),
+                            //     new Vector4(0,0,0,0));
                         
-                        var Ry = Matrix4.CreateRotationY((float)Math.PI*(rz+180f)/180f);
-                        var Rz = Matrix4.CreateRotationZ((float)Math.PI*ry/180f);
-                        var T = Matrix4.CreateTranslation(new Vector3(px, -pz, py));
-                        // var R = Rx * Ry * Rz * T;
-                        var R = Rz * Ry * Rx * T;
-                        //var R = T;
-                        //R[2,2] *= -1;
-                        list.Add(R);
+                            var Ry = Matrix4.CreateRotationY((float)Math.PI*(rz+180f)/180f);
+                            var Rz = Matrix4.CreateRotationZ((float)Math.PI*ry/180f);
+                            var T = Matrix4.CreateTranslation(new Vector3(px, -pz, py));
+                            // var R = Rx * Ry * Rz * T;
+                            var R = Rz * Ry * Rx * T;
+                            //var R = T;
+                            //R[2,2] *= -1;
+                            list.Add(R);
+                        }
+                        else
+                        {
+                            var Rx = Matrix4.CreateRotationX((float)Math.PI*(rx-90f)/180f);
+                            var Ry = Matrix4.CreateRotationY((float)Math.PI*(rz)/180f);
+                            var Rz = Matrix4.CreateRotationZ((float)Math.PI*ry/180f);
+                            var T = Matrix4.CreateTranslation(new Vector3(px, pz, py));
+                            var rot = Rz * Ry * Rx;
+                            var R = rot.Inverted() * T;
+                            //var R = T;
+                            //R[2,2] *= -1;
+                            list.Add(R.Inverted());
+                        }
+                        
                         
                         //list.Add(Matrix4.Identity);
                         break;

@@ -35,7 +35,7 @@ public class MultiViewFramePreparer
 
     public void InitImgTextures()
     {
-        DepthCamPoses = _viewImgProcessor.GetCameraPoseInformation();
+        DepthCamPoses = _viewImgProcessor.GetCameraPoseInformation(false);
         for (int i = 0; i < DepthCamPoses.Count; i++)
         {
             var mat = DepthCamPoses[i];
@@ -65,7 +65,7 @@ public class MultiViewFramePreparer
 
     public void InitVideoTextures()
     {
-        DepthCamPoses = _viewVidProcessor.GetCameraPoseInformation();
+        DepthCamPoses = _viewVidProcessor.GetCameraPoseInformation(false);
         for (int i = 0; i < DepthCamPoses.Count; i++)
         {
             var mat = DepthCamPoses[i];

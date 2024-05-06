@@ -198,10 +198,15 @@ public class MarchingCubes
 
             var startVertexValue = voxelGrid[startVertex[0], startVertex[1], startVertex[2]];
             var startColourValue = voxelGrid.GetColour(startVertex[0], startVertex[1], startVertex[2]);
+            // var startColourValue = new Vector4((startVertex[0] + 2) / 2f, (startVertex[1] + 2) / 3f,
+            //     (startVertex[2] + 0.25f) / 6f, 1.0f);
             
             var endVertexValue = voxelGrid[endVertex[0], endVertex[1], endVertex[2]];
             var endColourValue = voxelGrid.GetColour(endVertex[0], endVertex[1], endVertex[2]);
-
+            // var endColourValue = new Vector4((endVertex[0] + 2) / 2f, (endVertex[1] + 2) / 3f,
+            //     (endVertex[2] + 0.25f) / 6f, 1.0f);
+            
+            
             var proportion = -startVertexValue / (endVertexValue - startVertexValue);
             interpolatedVertexValues[idx] =
             [

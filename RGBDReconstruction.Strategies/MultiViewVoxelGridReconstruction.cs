@@ -26,7 +26,8 @@ public class MultiViewVoxelGridReconstruction
         // 0. tessellate each depth map to get voxel grid data
         var depthMapList = new List<float[,]>();
         var tessellatedDepthMapList = new List<Mesh>();
-        var camPoseList = _viewProcessor.GetCameraPoseInformation();
+        var camPoseList = _viewProcessor.GetCameraPoseInformation(true);
+        var camPoseListAlt = _viewProcessor.GetCameraPoseInformation(false);
         var numCams = camPoseList.Count;
 
         float xMin = float.PositiveInfinity;
@@ -70,7 +71,7 @@ public class MultiViewVoxelGridReconstruction
         // 2. for each camera:
         // b. get camera transformation data
         // c. update voxel grid
-        for (int j = 0; j < numCams-5; j++)
+        for (int j = 0; j < numCams; j++)
         {
             // if (j > 1)
             // {
@@ -78,7 +79,9 @@ public class MultiViewVoxelGridReconstruction
             // }
             // TODO: Get camera pose from info
             var byteData = _viewProcessor.GetRGBImageData(frameNo, j + 1);
-            currentVoxGrid.UpdateWithTriangularMesh(tessellatedDepthMapList[j], camPoseList[j], byteData, 1920, 1080);
+            var pose = camPoseListAlt[j];
+            pose.Transpose();
+            currentVoxGrid.UpdateWithTriangularMesh(tessellatedDepthMapList[j], pose, byteData, 1920, 1080);
         }
 
         // 3. do marching cubes and return
