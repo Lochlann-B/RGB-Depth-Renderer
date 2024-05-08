@@ -377,14 +377,14 @@ public class RaycastReconstruction : IReconstructionApplication
         //_rgbTexture.Use(TextureUnit.Texture1);
         
         _raycastShader.Use();
-        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
+        _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
         
         // Console.WriteLine("Cpose: ");
         // Console.WriteLine(cpose);
         // Console.WriteLine("View: ");
         // Console.WriteLine(_view);
         // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _cPose);
-        _raycastShader.SetUniformMatrix4f("viewMatrix", ref _animPose);
+        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _animPose);
         _raycastShader.SetUniformMatrix4f("inverseProjectionMatrix", ref _projectionInv);
         _raycastShader.SetUniformVec2("screenSize", ref _screenSize);
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);

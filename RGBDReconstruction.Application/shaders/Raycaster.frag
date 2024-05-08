@@ -226,7 +226,7 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
     float truncDist = 0.02f;
     float truncDistMultiplier = 1f;
     bool inVoid = false;
-    int maxIters = 1000;
+    int maxIters = 500;
     float smallestS = -truncDist;
     float threshold = 0.001f;
     
@@ -267,12 +267,12 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
             return pixelColour;
         }
         
-//        if (inVoid) {
-//            smallestS = truncDistMultiplier*0.1f;//clamp(smallestS, -truncDist*truncDistMultiplier, truncDist*truncDistMultiplier);
-////            return vec4(1,0,0,1);
-//        } else {
+        if (inVoid) {
+            smallestS = truncDistMultiplier*0.1f;//clamp(smallestS, -truncDist*truncDistMultiplier, truncDist*truncDistMultiplier);
+//            return vec4(1,0,0,1);
+        } else {
             smallestS = clamp(smallestS, -truncDist, truncDist);
-//        }
+        }
         oldPos = vec3(currentPos);
         currentPos = currentPos + smallestS * 0.8f * worldRayDirection;
         
@@ -303,8 +303,8 @@ vec4 raycastDepthMaps(vec3 worldRayStart, vec3 worldRayDirection) {
             smallestS = newSmallestS;
             inVoid = false;
         } else { 
-//            inVoid = true; 
-//            truncDistMultiplier = newSmallestS > 65000 ? -1 : sign(newSmallestS);
+            inVoid = true; 
+            truncDistMultiplier = newSmallestS > 65000 ? -1 : sign(newSmallestS);
             
         }
     }

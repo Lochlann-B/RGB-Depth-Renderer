@@ -206,7 +206,7 @@ public class MultiViewFramePreparer
             var depth = nextFrameData[i].Item2;
             
             _rgbTextures[i].UpdateWithPointer(rgb, false);
-            _depthTextures[i].UpdateWithPointer(depth, true);
+            _depthTextures[i].UpdateWithPointer(depth, false);
         }
     }
 }

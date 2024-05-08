@@ -8,7 +8,7 @@ public class RGBDReconstructionRun
 {
     static void Main(String[] args)
     {
-        using var app = new Application(1920, 1080, "RGB+Depth Reconstruction");
+        using var app = new Application(1280, 720, "RGB+Depth Reconstruction");
         app.Run();
     }
 }

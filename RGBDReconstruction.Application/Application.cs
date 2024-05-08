@@ -25,8 +25,8 @@ public class Application(int width, int height, string title) : GameWindow(GameW
         CursorState = CursorState.Grabbed;
         Cursor = MouseCursor.Empty;
 
-        app = new BVHReconstruction();
-        // app = new RaycastReconstruction();
+        // app = new BVHReconstruction();
+        app = new RaycastReconstruction();
         
         app.Init(Size.X, Size.Y);
     }

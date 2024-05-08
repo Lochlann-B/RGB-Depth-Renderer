@@ -1,10 +1,14 @@
-﻿using Emgu.CV.Ocl;
+﻿using System.Drawing;
+using System.Drawing.Imaging;
+using Emgu.CV.Ocl;
+using Microsoft.VisualBasic;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using RGBDReconstruction.Strategies;
+using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
 
 namespace RGBDReconstruction.Application;
 
@@ -40,8 +44,19 @@ public class BVHReconstruction : IReconstructionApplication
 
     private Texture _diffuseMap;
     private Texture _specularMap;
+    
+    private List<int> _keyFrames = new List<int>();
+    private List<Vector3> _positionsAtKeyFrames = new List<Vector3>();
+    private List<Vector3> _rotationsAtKeyFrames = new List<Vector3>();
 
     private List<Texture> _textures;
+    
+    private int _vidFrame = 180;
+    
+    private string _evalPath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\virtualcam_samepos_asdatacam\\cam1\\";
+    private string _keyFrameText = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\testcamkeyframes.txt";
+    
+    private Matrix4 _animPose;
     
     public void Init(int windowWidth, int windowHeight)
     {
@@ -50,7 +65,7 @@ public class BVHReconstruction : IReconstructionApplication
         
         GL.Enable(EnableCap.DepthTest);
 
-        GL.ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
         _camera = new Camera();
         _sensitivity = 0.1f;
@@ -58,10 +73,13 @@ public class BVHReconstruction : IReconstructionApplication
         _vertexBufferObject = GL.GenBuffer();
         
         GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
+        
+        GetTestCamAnimationData(_keyFrameText);
+        
+        UpdateAnimation();
 
-
-        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 400);
-        var mesh = multiViewReconstructor.GetFrameGeometry(1);
+        var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 500);
+        var mesh = multiViewReconstructor.GetFrameGeometry(180);
         // var textureData = multiViewReconstructor.GetRGBData(1);
         var contiguousMeshData = mesh.GetContiguousMeshData();
         
@@ -110,14 +128,14 @@ public class BVHReconstruction : IReconstructionApplication
         _model[1, 1] = 1f;
         _model[2, 2] = -1f;
         _view = Matrix4.CreateTranslation(0.0f, 0.0f, -0.0f);
-        _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45.0f), windowWidth / (float)windowHeight, 0.1f, 100.0f);
+        _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(39.6f*9/160f), windowWidth / (float)windowHeight, 0.1f, 100.0f);
         _lightingShader.SetUniformMatrix4f("model", ref _model);
         _lightingShader.SetUniformMatrix4f("view", ref _view);
         _lightingShader.SetUniformMatrix4f("projection", ref _projection);
 
-        _lightPos = new Vector3(-0.0f, -0.0f, -1.0f);
+        _lightPos = new Vector3(-0.0f, -0.0f, 0.0f);
 
-
+        
 
         //_diffuseMap = new Texture("./resources/container2.png");
         // _diffuseMap = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
@@ -150,10 +168,19 @@ public class BVHReconstruction : IReconstructionApplication
         GL.BindVertexArray(_vertexArrayObject);
         // _diffuseMap.Use(TextureUnit.Texture0);
 
+
+        // _animPose = new Matrix4(new Vector4(0.622f, -0.0668f, 0.7797f, 0f),
+        //     new Vector4(0f, 0.996f, 0.0854f, 0f),
+        // new Vector4(-0.782f, -0.0568f, 0.6202f, 0f),
+        // new Vector4(0.184f, 0.25f, -1.103f, 1f));
+        
+        // _view.Column3 = new Vector4(_animPose.ExtractTranslation(), 1.0f);
         
         _lightingShader.Use();
         _lightingShader.SetUniformMatrix4f("model", ref _model);
         _lightingShader.SetUniformMatrix4f("view", ref _view);
+        // Console.WriteLine(_view);
+        // _lightingShader.SetUniformMatrix4f("view", ref _animPose);
         _lightingShader.SetUniformMatrix4f("projection", ref _projection);
 
         var vLightPos = new Vector4(_lightPos, 0.0f);
@@ -185,6 +212,131 @@ public class BVHReconstruction : IReconstructionApplication
         
         GL.DrawElements(PrimitiveType.Triangles, _indexArray.Length, DrawElementsType.UnsignedInt, 0);
     }
+    
+    public void UpdateAnimation()
+    {
+        
+
+        for (int i = 0; i < _keyFrames.Count-1; i++)
+        {
+            if (_keyFrames[i] <= _vidFrame && _keyFrames[i + 1] > _vidFrame)
+            {
+                var LBPos = _positionsAtKeyFrames[i];
+                var UBPos = _positionsAtKeyFrames[i + 1];
+
+                var LBRot = _rotationsAtKeyFrames[i];
+                var UBRot = _rotationsAtKeyFrames[i + 1];
+
+                var LBFrame = _keyFrames[i];
+                var UBFrame = _keyFrames[i + 1];
+
+                var interpVal = (_vidFrame - LBFrame) / (float)(UBFrame - LBFrame);
+
+                var interpPos = LBPos + interpVal * (UBPos - LBPos);
+                var interpRot = LBRot + interpVal * (UBRot - LBRot);
+
+                // interpPos[0] = 0.18f;
+                // interpPos[2] *= -1;
+                interpPos.X *= -1;
+                interpPos.Z *= -1;
+                
+                var T = Matrix4.CreateTranslation(interpPos.Xzy);
+                var Rx = Matrix4.CreateRotationX((float)Math.PI*(interpRot.X-90f)/180f);
+                var Ry = Matrix4.CreateRotationY((float)Math.PI*(interpRot.Z)/180f);
+                var Rz = Matrix4.CreateRotationZ((float)Math.PI*interpRot.Y/180f);
+
+                _animPose = Rx * Ry * Rz;
+                // _animPose.Transpose();
+
+                _camera._position = interpPos.Xzy;
+                _camera._roll = interpRot.Y;
+                _camera._pitch = interpRot.X - 90f;
+                _camera._yaw = 270f-interpRot.Z;
+                
+                _animPose = _animPose.Inverted();
+                _animPose.Row3 = new Vector4(interpPos, 1.0f);
+                // _animPose.Transpose();
+                Console.WriteLine(_animPose);
+                break;
+            }
+        }
+    }
+    
+    private void GetTestCamAnimationData(string filepath)
+    {
+        var lines = File.ReadAllLines(filepath);
+        
+
+        var pos = new Vector3();
+        var rot = new Vector3();
+        for (int i = 0; i < lines.Length; i++)
+        {
+            
+            if (i % 7 == 0 || i == 0)
+            {
+                var frame = int.TryParse(lines[i], out var frameNum);
+                if (frame)
+                {
+                    _keyFrames.Add(frameNum);
+                }
+
+                if (i > 0)
+                {
+                    _positionsAtKeyFrames.Add(pos);
+                    _rotationsAtKeyFrames.Add(rot);
+                    pos = new Vector3();
+                    rot = new Vector3();
+                }
+            }
+            else if (i % 7 > 0 && i % 7 < 4)
+            {
+                var parsed = float.TryParse(lines[i], out var coord);
+                if (parsed)
+                    pos[(i % 7)-1] = coord;
+            }
+            else
+            {
+                var parsed = float.TryParse(lines[i], out var angle);
+                if (parsed)
+                    rot[(i % 7) - 4] = angle;
+            }
+        }
+        _positionsAtKeyFrames.Add(pos);
+        _rotationsAtKeyFrames.Add(rot);
+    }
+    
+    private void CaptureScreenToFile(string filename)
+    {
+        int width = _width;
+        int height = _height;
+
+        // Create an array to hold the pixel data
+        byte[] data = new byte[width * height * 4];  // 4 bytes for RGBA
+
+        // Read the pixels from the framebuffer
+        GL.ReadPixels(0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+        // Swap R and B channels
+        for (int i = 0; i < width * height * 4; i += 4)
+        {
+            (data[i], data[i + 2]) = (data[i + 2], data[i]);
+        }
+        // Use Bitmap to save the data as a PNG
+        using (Bitmap bmp = new Bitmap(width, height))
+        {
+            // Lock the bitmap's bits
+            BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            // Get the address of the first line
+            System.Runtime.InteropServices.Marshal.Copy(data, 0, bmpData.Scan0, data.Length);
+
+            // Unlock the bits
+            bmp.UnlockBits(bmpData);
+
+            // Save the bitmap as a PNG file
+            bmp.RotateFlip(RotateFlipType.RotateNoneFlipY); // Optional: Flip the image vertically
+            bmp.Save(filename, ImageFormat.Png);
+        }
+    }
 
     public void Resize(ResizeEventArgs e)
     {
@@ -211,6 +363,15 @@ public class BVHReconstruction : IReconstructionApplication
             _prevMousePos.Y = MousePosition.Y;
             
             _camera.HandleInput(keyboardState, new Vector2(deltaX, deltaY), _sensitivity, args.Time);
+        }
+
+        if (keyboardState.IsKeyPressed(Keys.T))
+        {
+            var filePath =
+                _evalPath;
+            filePath += "\\voxelgrid300\\vidFrame_" + _vidFrame + ".png";
+            
+            CaptureScreenToFile(filePath);
         }
     }
     

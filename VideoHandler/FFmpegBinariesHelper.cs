@@ -5,6 +5,7 @@ namespace VideoHandler;
 
 public class FFmpegBinariesHelper
 {
+    //TODO: Give credit
     public static void RegisterFFmpegBinaries()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

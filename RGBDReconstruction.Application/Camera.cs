@@ -6,7 +6,7 @@ namespace RGBDReconstruction.Application;
 
 public class Camera
 {
-    private Vector3 _position;
+    public Vector3 _position;
     private Vector3 _target;
     
     private Vector3 _front;
@@ -17,11 +17,16 @@ public class Camera
 
     private float _speed;
 
-    private float _yaw = -90f;
-    private float _pitch = 0f;
-    private float _roll = 0f;
+    // Y
+    public float _yaw = -90f;
+    
+    // X
+    public float _pitch = 0f;
+    
+    // Z
+    public float _roll = 0f;
 
-    private float _fov = Single.Pi/4f;
+    private float _fov = MathHelper.DegreesToRadians(39.6f*9/16f);
     private float _aspectRatio;
 
     public Camera()

@@ -158,6 +158,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
        //  //GL.MemoryBarrier(MemoryBarrierFlags.AtomicCounterBarrierBit);
        // // GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
        //  GL.MemoryBarrier(MemoryBarrierFlags.AllBarrierBits);
+       Console.WriteLine(GL.GetError());
         
         _computeShader.SetUniformInt("groupSize", 10000);
         for (int groupIdx = 0; groupIdx * 10000 < closeVoxelData.Length; groupIdx++)
