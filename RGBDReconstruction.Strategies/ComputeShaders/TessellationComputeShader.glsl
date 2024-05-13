@@ -95,7 +95,6 @@ Triangle getProjectionCorrection(vec3 v1, vec3 v2, vec3 v3) {
         vec3 n = normalize(normal(v1m, v2m, v3m));
         float adjCoeff = pow(abs(n.z), 1/4f); // dot(normal, vec3(0,0,1))
         
-        // okay chatgpt's idea turned out to be a bit shit... will try making all the y coordinates the same manually as they should be by finding the pair with the smallest diff in y, and subtracting the diff within this pair from the larger coord and third coord
         
         float nDiff1 = dot((v1 - v2), n);
         float nDiff2 = dot((v2 - v3), n);
@@ -151,32 +150,12 @@ void main()
     int x = storePos.y*xres;
     ivec2 pos = ivec2(x,y);
     
-    //positionArray[y*height + x] = imageLoad(depthBuffer, pos).r;
-    
     vec4 depths = vec4(
     imageLoad(depthBuffer, pos).r,
     imageLoad(depthBuffer, ivec2(pos.x, pos.y+yres)).r,
     imageLoad(depthBuffer, ivec2(pos.x+xres, pos.y+yres)).r,
     imageLoad(depthBuffer, ivec2(pos.x+xres, pos.y)).r
     );
-    //float depth = imageLoad(depthBuffer, storePos).x;
-
-//    positionArray[3*(y*height + x)] = x;
-//    positionArray[3*(y*height + x) + 1] = y;
-//    positionArray[3*(y*height + x) + 2] = depths.x;
-//    
-//    positionArray[3*((y+yres)*height + x)] = x;
-//    positionArray[3*((y+yres)*height + x)+1] = y + yres;
-//    positionArray[3*((y+yres)*height + x) + 2] = depths.y;
-//    
-//    positionArray[3*((y+yres)*height + x+xres)] = x+xres;
-//    positionArray[3*((y+yres)*height + x+xres) + 1] = y+yres;
-//    positionArray[3*((y+yres)*height + x+xres) + 2] = depths.z;
-//    
-//    positionArray[3*((y)*height + x+xres)] = x+xres;
-//    positionArray[3*((y)*height + x+xres) + 1] = y;
-//    positionArray[3*((y)*height + x+xres) + 2] = depths.w;
-//    return;
     
     
     int maxX = width-xres;
@@ -188,110 +167,29 @@ void main()
     int cenx = width/2;
     int ceny = height/2;
     float fx = getFocal(50f, 36f, 1920f);
-//    float fy = getFocal(28.125f, 36*(9/16f), 1080f);
-    float fy = fx;//getFocal(50f, 36f, 1080f);
+    float fy = fx;
 
     // Perform tessellation based on depth value
     // Calculate index, position, and texture coordinate for this pixel
-
-    // Example: Calculating index
-    //uint index = (storePos.y * width + storePos.x)*4;
     
-//    mat4 rotation = transpose(transformationMatrix);
-//    vec4 translation = vec4(rotation[3][0], rotation[3][1], rotation[3][2], 0f);
+    
+
     mat4 rotation = transformationMatrix;
     vec4 translation = vec4(rotation[0][3], rotation[1][3], rotation[2][3], 0f);
-//    vec4 translation = vec4(rotation[3][0], rotation[3][1], rotation[3][2], 0f);
-//    vec4 translation = vec4(0);
+
     rotation[0][3] = 0f;
     rotation[1][3] = 0f;
     rotation[2][3] = 0f;
     rotation[3][0] = 0f;
     rotation[3][1] = 0f;
     rotation[3][2] = 0f;
-    
-//    rotation = transpose(rotation);
-    
-    //float canvDist = 50/36f;
-
-//    vec3 v1 = (rotation * (translation + vec4( (depths.x + canvDist)*((x-cx)/fx), (depths.x + canvDist)*((y-cy)/fy), depths.x + canvDist, 1.0))).xyz;
-//    vec3 v2 = (rotation * (translation + vec4( (depths.y + canvDist)*((x-cx)/fx), (depths.y + canvDist)*((y+yres-cy)/fy), depths.y + canvDist, 1.0))).xyz;
-//    vec3 v3 = (rotation * (translation + vec4( (depths.z + canvDist)*((x+xres-cx)/fx), (depths.z + canvDist)*((y+yres-cy)/fy), depths.z + canvDist, 1.0 ))).xyz;
-//    vec3 v4 = (rotation * (translation + vec4( (depths.w + canvDist)*((x+xres-cx)/fx), (depths.w + canvDist)*((y-cy)/fy), depths.w + canvDist, 1.0 ))).xyz;
-    
-//    vec3 v1 = (rotation * (translation + vec4( (depths.x)*((x-cx)/fx), (depths.x)*((y-cy)/fy), depths.x, 1.0))).xyz;
-//    vec3 v2 = (rotation * (translation + vec4( (depths.y)*((x-cx)/fx), (depths.y)*((y+yres-cy)/fy), depths.y, 1.0))).xyz;
-//    vec3 v3 = (rotation * (translation + vec4( (depths.z)*((x+xres-cx)/fx), (depths.z)*((y+yres-cy)/fy), depths.z, 1.0 ))).xyz;
-//    vec3 v4 = (rotation * (translation + vec4( (depths.w)*((x+xres-cx)/fx), (depths.w)*((y-cy)/fy), depths.w, 1.0 ))).xyz;
-
-    
-    
-    
-//    vec3 v1 = (rotation * (translation + vec4( (depths.x)*((x-cenx)/fx), -(depths.x)*((height-y-ceny)/fy), depths.x, 1.0))).xyz;
-//    vec3 v2 = (rotation * (translation + vec4( (depths.y)*((x-cenx)/fx), -(depths.y)*((height-y-yres-ceny)/fy), depths.y, 1.0))).xyz;
-//    vec3 v3 = (rotation * (translation + vec4( (depths.z)*((x+xres-cenx)/fx), -(depths.z)*((height-y-yres-ceny)/fy), depths.z, 1.0 ))).xyz;
-//    vec3 v4 = (rotation * (translation + vec4( (depths.w)*((x+xres-cenx)/fx), -(depths.w)*((height-y-ceny)/fy), depths.w, 1.0 ))).xyz;
 
 
     vec3 v1 = (-translation + (rotation * (  vec4( (depths.x)*((x-cenx)/fx), -(depths.x)*((height-y-ceny)/fy), depths.x, 1.0)))).xyz;
     vec3 v2 = (-translation + (rotation * (  vec4( (depths.y)*((x-cenx)/fx), -(depths.y)*((height-y-yres-ceny)/fy), depths.y, 1.0)))).xyz;
     vec3 v3 = (-translation +  (rotation * (  vec4( (depths.z)*((x+xres-cenx)/fx), -(depths.z)*((height-y-yres-ceny)/fy), depths.z, 1.0 )))).xyz;
     vec3 v4 = (-translation + (rotation * ( vec4( (depths.w)*((x+xres-cenx)/fx), -(depths.w)*((height-y-ceny)/fy), depths.w, 1.0 )))).xyz;
-
     
-    //shitty one dont use
-
-//    vec3 v1 = (-translation + (rotation * (  vec4( 0.001f*x, 0.001f*(y), depths.x, 1.0)))).xyz;
-//    vec3 v2 = (-translation +(rotation * (  vec4( 0.001f*x, 0.001f*-(-y-yres), depths.y, 1.0)))).xyz;
-//    vec3 v3 = ( -translation +(rotation * (  vec4( 0.001f*(x+xres), 0.001f*-(-y-yres), depths.z, 1.0 )))).xyz;
-//    vec3 v4 = (-translation +  (rotation * ( vec4( 0.001f*(x+xres), 0.001f*(y), depths.w, 1.0 )))).xyz;
-    
-//    float rotZx = (rotation * vec4(0,0,depths.x,0)).z;
-//    float rotZy = (rotation * vec4(0,0,depths.y,0)).z;
-//    float rotZz = (rotation * vec4(0,0,depths.z,0)).z;
-//    float rotZw = (rotation * vec4(0,0,depths.w,0)).z;
-//
-//    vec3 v1 = (( (  vec4( (rotZx)*((x-cenx)/fx), -(rotZx)*((height-y-ceny)/fy), rotZx, 1.0)))).xyz;
-//    vec3 v2 = (((  vec4( (rotZy)*((x-cenx)/fx), -(rotZy)*((height-y-yres-ceny)/fy), rotZy, 1.0)))).xyz;
-//    vec3 v3 = ( ((  vec4( (rotZz)*((x+xres-cenx)/fx), -(rotZz)*((height-y-yres-ceny)/fy), rotZz, 1.0 )))).xyz;
-//    vec3 v4 = ((( vec4( (rotZw)*((x+xres-cenx)/fx), -(rotZw)*((height-y-ceny)/fy), rotZw, 1.0 )))).xyz;
-
-//    vec3 v1 = (vec4( (depths.x)*((x-cenx)/fx), -(depths.x)*((height-y-ceny)/fy), depths.x, 1.0)).xyz;
-//    vec3 v2 = (vec4( (depths.y)*((x-cenx)/fx), -(depths.y)*((height-y-yres-ceny)/fy), depths.y, 1.0)).xyz;
-//    vec3 v3 = (vec4( (depths.z)*((x+xres-cenx)/fx), -(depths.z)*((height-y-yres-ceny)/fy), depths.z, 1.0)).xyz;
-//    vec3 v4 = (vec4( (depths.w)*((x+xres-cenx)/fx), -(depths.w)*((height-y-ceny)/fy), depths.w, 1.0)).xyz;
-    
-    
-//    Triangle adjTri1 = getProjectionCorrection(v1, v2, v3);
-//    Triangle adjTri2 = getProjectionCorrection(v1, v3, v4);
-//    
-//    v1 = adjTri1.v1;
-//    v2 = adjTri2.v2;
-//    v3 = adjTri2.v2;
-//    v4 = adjTri3.v3;
-    
-//    float z1Adj = getProjectionCorrection(v1, v2, v3);
-//    float z2Adj = getProjectionCorrection(v1, v3, v4);
-//    float zAvAdj = (z1Adj + z2Adj)/2f;
-
-//    v1.y = -(zAvAdj*depths.x)*((height-y-yres-ceny)/fy);
-//    v2.y = -(z1Adj*depths.y)*((height-y-yres-ceny)/fy);
-//    v3.y = -(zAvAdj*depths.z)*((height-y-yres-ceny)/fy);
-//    v4.y = -(z2Adj*depths.w)*((height-y-yres-ceny)/fy);
-//    v2 = (rotation * (translation + vec4( (depths.y)*((x-cenx)/fx), -(z1Adj*depths.y)*((height-y-yres-ceny)/fy), depths.y, 1.0))).xyz;
-//    v3 = (rotation * (translation + vec4( (depths.z)*((x+xres-cenx)/fx), -(zAvAdj*depths.z)*((height-y-yres-ceny)/fy), depths.z, 1.0 ))).xyz;
-//    v4 = (rotation * (translation + vec4( (depths.w)*((x+xres-cenx)/fx), -(z2Adj*depths.w)*((height-y-ceny)/fy), depths.w, 1.0 ))).xyz;
-    
-
-//    vec3 v1 = (transpose(transformationMatrix) * vec4( depths.x*((x-cx)/fx), depths.x*((y-cy)/fy), depths.x, 1.0)).xyz;
-//    vec3 v2 = (transpose(transformationMatrix) * vec4( depths.y*((x-cx)/fx), depths.y*((y+yres-cy)/fy), depths.y, 1.0)).xyz;
-//    vec3 v3 = (transpose(transformationMatrix) * vec4( depths.z*((x+xres-cx)/fx), depths.z*((y+yres-cy)/fy), depths.z, 1.0 )).xyz;
-//    vec3 v4 = (transpose(transformationMatrix) * vec4( depths.w*((x+xres-cx)/fx), depths.w*((y-cy)/fy), depths.w, 1.0 )).xyz;
-
-//    vec3 v1 = vec3( x, y, depths.x);
-//    vec3 v2 = vec3( x, y+yres, depths.y);
-//    vec3 v3 = vec3( x+xres, y+yres, depths.z );
-//    vec3 v4 = vec3( x+xres, y, depths.w );
     
     // Non-projected vertices - used for indexing
     int adjXRes = xres;
@@ -307,13 +205,8 @@ void main()
     ivec3 nv3 = ivec3( x+adjXRes, y+adjYRes, 1 );
     ivec3 nv4 = ivec3( x+adjXRes, y, 1 );
     
-    // Triangle 1 - vertices 1, 2, 3
-//    if (z1Adj > 1e-4) {
-        writeTriangleData(v1, v2, v3, nv1, nv2, nv3, 0, fx, fy, width, height, cx, cy, x, y);
-//    }
-    
-    // Triangle 2 - vertices 1, 3, 4
-//    if (z2Adj > 1e-4) {
-        writeTriangleData(v1, v3, v4, nv1, nv3, nv4, 3, fx, fy, width, height, cx, cy, x, y);
-//    }
+
+    writeTriangleData(v1, v2, v3, nv1, nv2, nv3, 0, fx, fy, width, height, cx, cy, x, y);
+
+    writeTriangleData(v1, v3, v4, nv1, nv3, nv4, 3, fx, fy, width, height, cx, cy, x, y);
 }

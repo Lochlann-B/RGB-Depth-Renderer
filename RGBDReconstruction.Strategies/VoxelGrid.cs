@@ -28,12 +28,6 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
         // Do this by taking each triangle, and adding enclosing voxel cube to list
         var closeVoxels = new HashSet<Vector3>();
         
-        // var vertices = mesh.VertexPositions;
-        // for (int i = 0; i < vertices.Count; i += 3)
-        // {
-        //    var vertexPos = new Vector3(vertices[i], vertices[i + 1], vertices[i + 2]);
-        //    AddNeighbouringVoxels(closeVoxels, vertexPos);
-        // }
         
         // TODO: Make parallel?
         GetVoxelsNearMesh(closeVoxels, mesh);
@@ -161,8 +155,7 @@ public class VoxelGrid(int size, float xStart, float yStart, float zStart, float
                     }
                 }
             }
-
-            // TODO: Optimise this by looping through the coordinates on the surface of the triangle instead
+            
         }
     }
 

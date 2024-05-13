@@ -41,7 +41,6 @@ public class MultiViewVideoProcessor : MultiViewProcessor
                 var videoStreamHandler = new VideoStreamHandler();
                 videoStreamHandler.Initialize(fileNameRGB);
                 _videoStreamHandlersRGB.Add(videoStreamHandler);
-                // LoadFramesDepthAsync();
                 LoadFramesFromVideoStream(videoStreamHandler, idx, _videoFramesRGB);
                 
                 
@@ -54,8 +53,6 @@ public class MultiViewVideoProcessor : MultiViewProcessor
                 videoStreamHandler.Initialize(fileNameDepth);
                 _videoStreamHandlersDepth.Add(videoStreamHandler);
                 LoadFramesFromVideoStream(videoStreamHandler, idx, _videoFramesDepth);
-                // LoadFramesDepthAsync();
-                // LoadFramesRGBAsync();
             }));
 
         }
@@ -122,9 +119,6 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         {
             var _RGBFrameData = _videoFramesRGB[i];
             var _depthFrameData = _videoFramesDepth[i];
-            
-            // isReady = isReady && !((_videoFramesRGB[i].Count < 20 || _videoFramesDepth[i].Count < 20) &&
-            //                        _nextFrameToReturn == 1);
 
             isReady = isReady && !(_videoFramesDepth[i].IsEmpty) && !_videoFramesRGB[i].IsEmpty;
 
@@ -135,13 +129,6 @@ public class MultiViewVideoProcessor : MultiViewProcessor
             isReady = isReady && !(!rgbPeek || !depthPeek);
 
             isReady = isReady && rgb.Value != 0 && depth.Value != 0;
-
-            // _RGBFrameData.TryPeek(out var rgb);
-            // isReady = isReady && rgb.Key == _nextFrameToReturn;
-            //
-            // _depthFrameData.TryPeek(out var depth);
-            // isReady = isReady && (depth.Key == _nextFrameToReturn);
-
         }
 
         return isReady;
@@ -263,15 +250,9 @@ public class MultiViewVideoProcessor : MultiViewProcessor
         }
 
         camStr += cam.ToString();
+        
+        return DirectoryPath + "\\cam_" + camStr + "\\huffyuv_slowest_rgb_cam_" + camStr + extension;
 
-        // if (cam == 1)
-        // {
-            return DirectoryPath + "\\cam_" + camStr + "\\huffyuv_slowest_rgb_cam_" + camStr + extension;
-        // }
-        // else
-        // {
-            // return DirectoryPath + "\\cam_" + camStr + "\\rgb_cam_" + camStr + extension;
-        // }
     }
     
     private String GetVideoDepthFileName(int cam, String extension, String path)

@@ -68,9 +68,6 @@ uint getMortonCode(vec3 p) {
 }
 
 uint64_t getMortonCode64(vec3 p) {
-    //uint64_t answer = 0ul;
-    //answer |= expandBits64(uint(p.x)) | expandBits64(uint(p.y)) << 1 | expandBits64(uint(p.z)) << 2;
-    //return answer;
     return expandBits64(floatBitsToUint(p.x)) + expandBits64(floatBitsToUint(p.y)) * 2ul + expandBits64(floatBitsToUint(p.z)) * 4ul;
 }
 
@@ -102,31 +99,15 @@ void main() {
                 positionBufferArray[3*indexBufferArray[i1]+2]);
     
     // Map coordinates to the unit cube
-    //v1 = (v1 - minCoords)/(maxCoords - minCoords);
 
     vec3 v2 = vec3(positionBufferArray[3*indexBufferArray[i2]],
     positionBufferArray[3*indexBufferArray[i2]+1],
     positionBufferArray[3*indexBufferArray[i2]+2]);
-
-    //v2 = (v2 - minCoords)/(maxCoords - minCoords);
+    
 
     vec3 v3 = vec3(positionBufferArray[3*indexBufferArray[i3]],
     positionBufferArray[3*indexBufferArray[i3]+1],
     positionBufferArray[3*indexBufferArray[i3]+2]);
-
-    //v3 = (v3 - minCoords)/(maxCoords - minCoords);
-    
-//    vec3 v1 = vec3(imageLoad(positionBuffer, int(imageLoad(indexBuffer, i1).r)).r,
-//    imageLoad(positionBuffer, int(imageLoad(indexBuffer, i1+1).r)).r,
-//    imageLoad(positionBuffer, int(imageLoad(indexBuffer, i1+2).r)).r);
-//
-//    vec3 v2 = vec3(imageLoad(positionBuffer, int(imageLoad(indexBuffer, i2).r)).r,
-//    imageLoad(positionBuffer, int(imageLoad(indexBuffer, i2+1).r)).r,
-//    imageLoad(positionBuffer, int(imageLoad(indexBuffer, i2+2).r)).r);
-//
-//    vec3 v3 = vec3(imageLoad(positionBuffer, int(imageLoad(indexBuffer, i3).r)).r,
-//    imageLoad(positionBuffer, int(imageLoad(indexBuffer, i3+1).r)).r,
-//    imageLoad(positionBuffer, int(imageLoad(indexBuffer, i3+2).r)).r);
 
     vec3 centre = findCentroid(v1, v2, v3);
     

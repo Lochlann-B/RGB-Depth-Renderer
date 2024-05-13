@@ -7,7 +7,6 @@ namespace RGBDReconstruction.Strategies;
 public interface IVoxelGrid
 {
     public float this[float x, float y, float z] { get; set; }
-    //public float this[double x, double y, double z] { get; set; }
     
     public List<Vector3> SeenVoxels { get; }
     

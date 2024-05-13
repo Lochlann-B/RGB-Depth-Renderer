@@ -18,13 +18,13 @@ public class Application(int width, int height, string title) : GameWindow(GameW
 
     protected override void OnLoad()
     {
-        
-        // Runs once when the window opens. Put initialization code here!
         base.OnLoad();
         
         CursorState = CursorState.Grabbed;
         Cursor = MouseCursor.Empty;
 
+        // Comment out and uncomment whichever reconstruction method you wanna use - VoxelGrid only works with images!
+        
         // app = new BVHReconstruction();
         app = new RaycastReconstruction();
         

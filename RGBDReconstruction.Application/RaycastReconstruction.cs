@@ -1,6 +1,8 @@
-﻿using System.Diagnostics;
+﻿using System.Collections;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Emgu.CV;
 using OpenTK.Graphics.OpenGL4;
@@ -52,24 +54,12 @@ public class RaycastReconstruction : IReconstructionApplication
         1f, -1f, 
         1f, 1f,
     ];
-    
-    // protected MultiViewProcessor _viewProcessor;
-    // private float[,] _depthMap1;
-    // private float[,] _depthMap2;
-
-    // private int _depthBufferTexture;
-    // private Texture _depthBufferTexture1;
-    // private Texture _depthBufferTexture2;
-    // private Texture _rgbTexture1;
-    // private Texture _rgbTexture2;
-    // private Matrix4 _depthMapCamPose1;
-    // private Matrix4 _depthMapCamPose2;
 
     private int _frame = 1;
     private int _vidFrame = 1;
     
-    private string _evalPath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\virtualcam_samepos_asdatacam\\cam1\\";
-    private string _keyFrameText = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\testcamkeyframes.txt";
+    private string _evalPath = "C:\\Users\\Locky\\Desktop\\renders\\detective desk\\evaluation data\\testcam\\";
+    private string _keyFrameText = "C:\\Users\\Locky\\Desktop\\renders\\detective desk\\evaluation data\\testcamkeyframes.txt";
 
     // private double _elapsedTime = 0d;
 
@@ -93,11 +83,11 @@ public class RaycastReconstruction : IReconstructionApplication
 
     private double _lastFrameUpdateTime;
 
-    private String _refreshTestName = "r_rootsearch_3.csv";
-    private String _frameTestName = "f_rootsearch_3.csv";
+    private String _refreshTestName = "r_detective_desk_3.csv";
+    private String _frameTestName = "f_detective_desk_3.csv";
     
-    private string _refreshRateFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\refresh rates\\";
-    private string _frameRatesFilePath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\frame rates\\";
+    private string _refreshRateFilePath = "C:\\Users\\Locky\\Desktop\\renders\\detective desk\\evaluation data\\refresh rates\\";
+    private string _frameRatesFilePath = "C:\\Users\\Locky\\Desktop\\renders\\detective desk\\evaluation data\\frame rates\\";
 
     public void Init(int windowWidth, int windowHeight)
     {
@@ -148,17 +138,14 @@ public class RaycastReconstruction : IReconstructionApplication
 
         var K = new Matrix3(new Vector3(fx, 0, cx), new Vector3(0, fy, cy), new Vector3(0, 0, 1));
         _intrinsicMatrix = K;
-        //_intrinsicMatrix.Transpose();
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
 
-        _framePreparer = new MultiViewFramePreparer(0);
+        _framePreparer = new MultiViewFramePreparer(2);
         _framePreparer.InitVideoTextures();
 
         _depthCamPoses = _framePreparer.DepthCamPoses;
         
         var cpose = _depthCamPoses[0];
-        // Console.WriteLine(_depthCamPoses[5]);
-        // cpose.Transpose();
         cpose = cpose.Inverted();
         cpose.Transpose();
         cpose[0, 0] *= -1;
@@ -169,48 +156,6 @@ public class RaycastReconstruction : IReconstructionApplication
         GetTestCamAnimationData(_keyFrameText);
         
         UpdateAnimation();
-
-        // _viewProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\chain_collision");
-        // Task.Run(() => _viewProcessor.LoadFramesRGBAsync());
-        // Task.Run(() => _viewProcessor.LoadFramesDepthAsync());
-
-        // _depthCamPoses = _viewProcessor.GetCameraPoseInformation();
-        // var camPose = _depthCamPoses[0];
-        // _depthMapCamPose1 = camPose;
-        // _depthMapCamPose1.Transpose();
-        // _raycastShader.SetUniformMatrix4f("depthMapCamPoses[0]", ref _depthMapCamPose1);
-        //
-        // var camPose2 = _depthCamPoses[1];
-        // _depthMapCamPose2 = camPose2;
-        // _depthMapCamPose2.Transpose();
-        // _raycastShader.SetUniformMatrix4f("depthMapCamPoses[1]", ref _depthMapCamPose2);
-        //
-        // _depthMap1 = _viewProcessor.GetDepthMap(1, 1);
-        // _depthBufferTexture1 = new Texture(_depthMap1);
-        // _depthBufferTexture1.Use(TextureUnit.Texture0);
-        //
-        // _depthMap2 = _viewProcessor.GetDepthMap(1, 2);
-        // _depthBufferTexture2 = new Texture(_depthMap2);
-        // _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
-        //
-        // _rgbTexture1 = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
-        // _rgbTexture1.Use(TextureUnit.Texture0 + 1);
-        //
-        // _rgbTexture2 = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_002.png");
-        // _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);
-
-
-
-        // _depthBufferTexture = GL.GenTexture();
-        // GL.BindTexture(TextureTarget.Texture2D, _depthBufferTexture);
-        // GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.R32f, _depthMap.GetLength(1),
-        //     _depthMap.GetLength(0));
-        // GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _depthMap.GetLength(1), _depthMap.GetLength(0),
-        //     PixelFormat.Red, PixelType.Float, _depthMap);
-        //
-        // GL.ActiveTexture(TextureUnit.Texture0);
-        // //GL.BindImageTexture(0, _depthBufferTexture, 0, false, 0, TextureAccess.ReadOnly, SizedInternalFormat.R32f); 
-        // GL.BindTexture(TextureTarget.Texture2D, _depthBufferTexture);
         
         _watch.Start();
         
@@ -268,123 +213,25 @@ public class RaycastReconstruction : IReconstructionApplication
         _view = nonInvView.Inverted();
         _projectionInv = _camera.CameraProjectionMatrix.Inverted();
         
-        //blep
-
-        // var coordList = new List<Vector2>();
-        // var count = 0;
-        // for (var x = 0; x < _screenSize.X; x++)
-        // {
-        //     for (var y = 0; y < _screenSize.Y; y++)
-        //     {
-        //         var screenSize = _screenSize;
-        //         var ndc = (new Vector2(x,y) / screenSize);
-        //         ndc *= 2;
-        //         ndc -= new Vector2(1f, 1f);
-        //         //ndc.y = 1.0 - ndc.y;
-        //
-        //         // Unproject to camera space
-        //         var rayClip = new Vector4(ndc[0], ndc[1], -1.0f, 1.0f);
-        //         var rayCamera = _projectionInv * rayClip;
-        //         rayCamera[2] = -1.0f; 
-        //         rayCamera[3] = 0.0f;   
-        //
-        //         var rayWorld = Vector3.Normalize(((_view) * rayCamera).Xyz);
-        //         var cameraPosition = (_view * new Vector4(0,0,0,1)).Xyz;
-        //
-        //         var blep = raycast(cameraPosition, rayWorld, _depthMapCamPose, _intrinsicMatrix, _depthMap);
-        //
-        //         if (blep.W > 0)
-        //         {
-        //             count++;
-        //             coordList.Add(new Vector2(x, y));
-        //             //_depthMap[y, x] = 1.0f;
-        //         }
-        //         else
-        //         {
-        //             //_depthMap[y, x] = 0f;
-        //         }
-        //     }
-        // }
-        
-        
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
         
         GL.BindVertexArray(_vertexArrayObject);
         
-        // GL.BindTexture(TextureTarget.Texture2D, _depthBufferTexture);
-        // GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.R32f, _depthMap.GetLength(1),
-        //     _depthMap.GetLength(0));
-        // GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _depthMap.GetLength(1), _depthMap.GetLength(0),
-        //     PixelFormat.Red, PixelType.Float, _depthMap);
-        
-        //GL.BindImageTexture(0, _depthBufferTexture, 0, false, 0, TextureAccess.ReadOnly, SizedInternalFormat.R32f);
-
-        // _rgbTexture.Use(TextureUnit.Texture1);
-        // _depthBufferTexture.Use();
-        
-        // _depthMap = _viewProcessor.GetDepthMap(_frame, 1);
-        // _depthBufferTexture = new Texture(_depthMap);
-        // _rgbTexture = new Texture(_viewProcessor.GetPNGFileName(_frame, 1));
-
-        // _elapsedTime += args.Time;
-        // if (_elapsedTime >= 1 / 60d)
-        // {
-        //     var nextFrameData = _viewProcessor.GetNextAvailableFrame();
-        //     if (nextFrameData is not null)
-        //     {
-        //         _depthMapCamPose2 = _depthCamPoses[1];
-        //         _depthMapCamPose2.Transpose();
-        //         var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-        //         GL.WaitSync(fence, WaitSyncFlags.None, -1);
-        //         GL.DeleteSync(fence);
-        //         
-        //         var rgbData = nextFrameData.Value.Item1;
-        //         var depthData = nextFrameData.Value.Item2;
-        //         _rgbTexture2.UpdateWithByteData(rgbData);
-        //         _depthBufferTexture2.UpdateWithFloatArrayData(depthData);
-        //         
-        //         var fence2 = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-        //         GL.WaitSync(fence2, WaitSyncFlags.None, -1);
-        //         GL.DeleteSync(fence2);
-        //     }
-        //
-        //     _elapsedTime = 0d;
-        // }
-        
-        
-        
         var updated = _framePreparer.TryUpdateNextVideoFrames(args.Time);
+        
+        var rgbMapsArr = Enumerable.Range(0, _depthCamPoses.Count).ToArray();
 
-        
-        
-        
-        //_rgbTexture.UpdateTexture(_viewProcessor.GetPNGFileName(_frame, 1));
-        var rgbMapsArr = new[] { 0, 1,2,3,4,5};
         _raycastShader.SetUniformInts("rgbMaps", ref rgbMapsArr);
         _framePreparer.UseRGBMapTextures(rgbMapsArr);
         
-        var depthMapsArr = new[] { 6,7,8,9,10,11};
+        var depthMapsArr = Enumerable.Range(rgbMapsArr.Length, _depthCamPoses.Count).ToArray();
         _raycastShader.SetUniformInts("depthMaps", ref depthMapsArr);
         _framePreparer.UseDepthMapTextures(depthMapsArr);
-        // _depthBufferTexture1.Use(TextureUnit.Texture0);
-        // _depthBufferTexture2.Use(TextureUnit.Texture0 + 1);
-        
-  
-        
-        // _rgbTexture1.SetLocation(rgbLoc);
-        // _rgbTexture1.Use(TextureUnit.Texture0 + 2);
-        // _rgbTexture2.Use(TextureUnit.Texture0 + 2 + 1);
-        //_rgbTexture.Use(TextureUnit.Texture1);
         
         _raycastShader.Use();
         _raycastShader.SetUniformMatrix4f("viewMatrix", ref _view);
         
-        // Console.WriteLine("Cpose: ");
-        // Console.WriteLine(cpose);
-        // Console.WriteLine("View: ");
-        // Console.WriteLine(_view);
-        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _cPose);
-        // _raycastShader.SetUniformMatrix4f("viewMatrix", ref _animPose);
+
         _raycastShader.SetUniformMatrix4f("inverseProjectionMatrix", ref _projectionInv);
         _raycastShader.SetUniformVec2("screenSize", ref _screenSize);
         _raycastShader.SetUniformMatrix3f("intrinsicMatrix", ref _intrinsicMatrix);
@@ -397,10 +244,7 @@ public class RaycastReconstruction : IReconstructionApplication
             var pose = _depthCamPoses[i];
             _raycastShader.SetUniformMatrix4f($"depthMapCamPoses[{i}]", ref pose);
         }
-        // _raycastShader.SetUniformMatrix4f("depthMapCamPoses[0]", ref _depthMapCamPose1);
-        // _raycastShader.SetUniformMatrix4f("depthMapCamPoses[1]", ref _depthMapCamPose2);
-        // _raycastShader.SetUniformInt("depthMap", 0);
-        // _raycastShader.SetUniformInt("rgbMap", 1);
+
         
         GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
         _frame++;
@@ -436,15 +280,15 @@ public class RaycastReconstruction : IReconstructionApplication
             var rollingFrameRate = _rollingFrameRates.Sum()/_rollingFrameRates.Count;
             
             _frameRates.Add((time, rollingFrameRate));
-            // _frameRates.Add((time, frameRate));
             
             _vidFrame++;
             var filePath =
                 _evalPath;
-            filePath += "\\rootsearch\\vidFrame_" + _vidFrame + ".png";
+            filePath += "vidFrame_" + _vidFrame + ".png";
             
             UpdateAnimation();
             
+            // Uncomment if you want to save frame data for comparison purposes
             // CaptureScreenToFile(filePath);
         }
 
@@ -452,13 +296,9 @@ public class RaycastReconstruction : IReconstructionApplication
 
     public void SaveToCSV(List<(double, double)> data, String filepath, String filename)
     {
-        // Create a StreamWriter to write to the file
         using (StreamWriter writer = new StreamWriter(filepath + filename))
         {
-            // Optional: Write headers
             writer.WriteLine("X,Y");
-            
-            // Write data
             foreach (var (x, y) in data)
             {
                 writer.WriteLine($"{x},{y}");
@@ -507,7 +347,6 @@ public class RaycastReconstruction : IReconstructionApplication
 
                 _animPose = Rx * Ry * Rz * T;
                 _animPose.Transpose();
-                // _animPose = _animPose.Inverted();
                 
                 break;
             }
@@ -562,31 +401,25 @@ public class RaycastReconstruction : IReconstructionApplication
     {
         int width = _width;
         int height = _height;
-
-        // Create an array to hold the pixel data
-        byte[] data = new byte[width * height * 4];  // 4 bytes for RGBA
-
-        // Read the pixels from the framebuffer
+        
+        byte[] data = new byte[width * height * 4];
+        
         GL.ReadPixels(0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, data);
-        // Swap R and B channels
+
         for (int i = 0; i < width * height * 4; i += 4)
         {
             (data[i], data[i + 2]) = (data[i + 2], data[i]);
         }
-        // Use Bitmap to save the data as a PNG
+
         using (Bitmap bmp = new Bitmap(width, height))
         {
-            // Lock the bitmap's bits
             BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            // Get the address of the first line
             System.Runtime.InteropServices.Marshal.Copy(data, 0, bmpData.Scan0, data.Length);
 
-            // Unlock the bits
             bmp.UnlockBits(bmpData);
 
-            // Save the bitmap as a PNG file
-            bmp.RotateFlip(RotateFlipType.RotateNoneFlipY); // Optional: Flip the image vertically
+            bmp.RotateFlip(RotateFlipType.RotateNoneFlipY);
             bmp.Save(filename, ImageFormat.Png);
         }
     }

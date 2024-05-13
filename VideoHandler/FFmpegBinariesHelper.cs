@@ -5,7 +5,7 @@ namespace VideoHandler;
 
 public class FFmpegBinariesHelper
 {
-    //TODO: Give credit
+    // Code from Ruslan B: https://github.com/Ruslan-B/FFmpeg.AutoGen/tree/master, obtained under the GNU lesser general public license.
     public static void RegisterFFmpegBinaries()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -28,6 +28,6 @@ public class FFmpegBinariesHelper
             }
         }
         else
-            throw new NotSupportedException(); // fell free add support for platform of your choose
+            throw new NotSupportedException();
     }
 }

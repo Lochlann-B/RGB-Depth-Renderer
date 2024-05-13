@@ -45,16 +45,9 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         
         BVH = BVHConstructor.GetBVH(posArray, indexArray, xRanges, yRanges, zRanges);
         
-        // blep(closeVoxels.ToArray(), cameraPos, BVH, (BVH.Length + 1)/2, posArray, indexArray);
-        // return;
-        
-       // int numLeaves = (BVH.Length + 1) / 2;
-        //int reachableLeaves = HowManyLeafNodes(BVH, numLeaves);
-        
         int rgbBufferTexture = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, rgbBufferTexture);
-        // GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.Rgba8, width,
-        //     height);
+
         GL.TexImage2D(TextureTarget.Texture2D, 
             0, 
             PixelInternalFormat.Rgba, 
@@ -148,16 +141,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 8, voxelColoursBufferSSBO);
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
         
-        // int currentWeightBufferSSBO = GL.GenBuffer();
-        // GL.BindBuffer(BufferTarget.ShaderStorageBuffer, currentWeightBufferSSBO);
-        // GL.BufferData(BufferTarget.ShaderStorageBuffer, sizeof(float)*currentWeights.Length, currentWeights, BufferUsageHint.StaticDraw);
-        // GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 8, currentWeightBufferSSBO);
-        // GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
-            
-       //  GL.DispatchCompute(closeVoxelData.Length, 1, 1);
-       //  //GL.MemoryBarrier(MemoryBarrierFlags.AtomicCounterBarrierBit);
-       // // GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
-       //  GL.MemoryBarrier(MemoryBarrierFlags.AllBarrierBits);
+
        Console.WriteLine(GL.GetError());
         
         _computeShader.SetUniformInt("groupSize", 10000);
@@ -166,8 +150,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
             _computeShader.SetUniformInt("groupIdx", groupIdx);
          
             GL.DispatchCompute(Math.Min(10000, closeVoxelData.Length-10000*groupIdx), 1, 1);
-            // GL.DispatchCompute(closeVoxelData.Length, 1, 1);
-            //GL.MemoryBarrier(MemoryBarrierFlags.AtomicCounterBarrierBit);
+
             GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
         }
         
@@ -178,15 +161,12 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
         GL.GetNamedBufferSubData(voxelValuesBufferSSBO, 0, sizeof(float) * _voxelValues.Length, _voxelValues);
        GL.GetNamedBufferSubData(voxelWeightBufferSSBO, 0, sizeof(float)*_voxelWeights.Length, _voxelWeights);
         GL.GetNamedBufferSubData(voxelColoursBufferSSBO, 0, Marshal.SizeOf<System.Numerics.Vector4>() * _voxelColours.Length, _voxelColours);
-        // GL.GetNamedBufferSubData(atomicCounterBufferID, 0, sizeof(int), ref counterValue);
-        //GL.CopyBufferSubData();
-        //GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
-        //GL.Flush();
+
         var seenVoxHashSet = new HashSet<Vector3>();
         for (int i = 0; i < seenVoxels.Length; i++)
         {
             seenVoxHashSet.Add(new Vector3(seenVoxels[i][0], seenVoxels[i][1], seenVoxels[i][2]));
-            //_seenVoxels.Add(new Vector3(seenVoxels[i][0], seenVoxels[i][1], seenVoxels[i][2]));
+
         }
 
         foreach (var vox in seenVoxHashSet)
@@ -254,19 +234,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
     protected void GetVoxelsNearMesh(HashSet<System.Numerics.Vector4> voxels, Mesh mesh)
     {
 
-        // for (float i = 0; i < Size; i++)
-        // {
-        //     for (float j = 0; j < Size; j++)
-        //     {
-        //         for (float k = 0; k < Size; k++)
-        //         {
-        //             voxels.Add(new System.Numerics.Vector4(XStart + i * Resolution, YStart + j * Resolution,
-        //                 ZStart + k * Resolution, 1.0f));
-        //         }
-        //     }
-        // }
-        //
-        // return;  
+
         var triangles = mesh.GetMeshTriangles();
         foreach (var triangle in triangles) 
         {
@@ -334,12 +302,7 @@ public class VoxelGridDeviceBVH(int size, float xStart, float yStart, float zSta
     
     protected void AddNeighbouringVoxels(HashSet<System.Numerics.Vector4> voxels, Vector3 coord)
     {
-        // var startVox = new System.Numerics.Vector4(
-        //     coord[0].FloorToInterval(Resolution),
-        //     coord[1].FloorToInterval(Resolution),
-        //     coord[2].FloorToInterval(Resolution),
-        //     1.0f
-        // );
+
         var startVox = new System.Numerics.Vector4(coord[0], coord[1], coord[2], 1.0f);
 
         voxels.Add(startVox);

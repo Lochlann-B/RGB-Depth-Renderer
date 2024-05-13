@@ -40,15 +40,11 @@ public class MultiViewVoxelGridReconstruction
         
         for (int i = 1; i <= numCams; i++)
         {
-            // if (i > 2)
-            // {
-            //     continue;
-            // }
+
             
             depthMapList.Add(_viewProcessor.GetDepthMap(frameNo, i));
             var mesh = DepthTessellator.TessellateDepthArray(depthMapList[i-1], camPoseList[i-1]);
 
-            // return mesh;
             
             tessellatedDepthMapList.Add(mesh);
             
@@ -85,17 +81,6 @@ public class MultiViewVoxelGridReconstruction
         }
 
         // 3. do marching cubes and return
-        // var focalLength = 50f;
-        // var sensorWidth = 36f;
-        // var width = 1920f;
-        // var height = 1080f;
-        // var cx = width / 2f;
-        // var cy = height / 2f;
-        //
-        // var fx = width * (focalLength / sensorWidth);
-        // var fy = fx;
-        //
-        // var K = new Matrix3(new Vector3(fx, 0, cx), new Vector3(0, fy, cy), new Vector3(0, 0, 1));
         
         var outputMesh = MarchingCubes.GenerateMeshFromVoxelGrid(currentVoxGrid);
         return outputMesh;

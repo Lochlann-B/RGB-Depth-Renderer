@@ -31,10 +31,6 @@ layout (std430, binding = 4) buffer positionArrayBuffer {
     float positionArray[];
 };
 
-//layout (std430, binding = 5) buffer internalNodeAtomicCounter {
-//    atomic_uint internalNodeCounters[];
-//};
-
 uniform int numObjs;
 
 void main() {
@@ -74,17 +70,11 @@ void main() {
     
     for(int i = 0; i < 100; i++) {
         
-//        if (internalNodeCounters[currentParentIdx] == 0) {
-//            atomicCounterIncrement(internalNodeCounters[currentParentIdx]);
-//            return;
-//        }
-        
         if (currentIdx == 0 && currentParentIdx == 0) {
             return;
         }
         
         BVHNode currentNode = BVHInternals[currentIdx];
-        //currentParentIdx = currentNode.parentIdx;
         
         BVHNode left;
         if (currentNode.leftIdx >= numObjs - 1) {

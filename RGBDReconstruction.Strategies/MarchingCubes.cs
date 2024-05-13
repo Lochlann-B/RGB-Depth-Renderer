@@ -15,19 +15,16 @@ public class MarchingCubes
 
         var positions = new List<float>();
         var normals = new List<float>();
-        // var texCoords = new List<float>();
         var vertexIndices = new List<int>();
         var colours = new List<float>();
 
         var posVertexAttribute = new VertexAttribute(0, sizeof(float), 3);
         var normVertexAttribute = new VertexAttribute(3, sizeof(float), 3);
-        // var texVertexAttribute = new VertexAttribute(6, sizeof(float), 2);
         var colourVertexAttribute = new VertexAttribute(6, sizeof(float), 4);
         
         var vertexAttribDictionary = new Dictionary<string, VertexAttribute>();
         vertexAttribDictionary["positions"] = posVertexAttribute;
         vertexAttribDictionary["normals"] = normVertexAttribute;
-        // vertexAttribDictionary["textureCoordinates"] = texVertexAttribute;
         vertexAttribDictionary["colours"] = colourVertexAttribute;
         
         var maxY = 1080;
@@ -67,14 +64,6 @@ public class MarchingCubes
                     var position = new Vector3(pos[l][0], pos[l][1], pos[l][2]);
                     var normal = new Vector3(norm[l][0], norm[l][1], norm[l][2]);
                     var colour = triangleColours[l][0];
-
-                    // UV Coordinate is a simple xy plane projection
-                    // var texCoord = new Vector2((fy*position[0]/position[2] + cy)/maxY,(fx*position[1]/position[2] + cx)/maxX);
-
-                    // var textureCoords = GetTexCoords(position, camPoses, intrinsicMatrix, maxX, maxY);
-
-                    //TODO: Weights
-                    
                     
                     var vertex = new ColouredVertex(position, normal, colour);
                     if (uniqueVertices.Contains(vertex))

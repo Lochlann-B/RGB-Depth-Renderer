@@ -15,34 +15,14 @@ struct Light {
 
 struct Material {
     sampler2D diffuse;
-    //sampler2D specular;
 
     float shininess;
 };
 
 uniform Material material;
 uniform Light light;
-//uniform sampler2D rgbMaps[6];
 
 void main() {
     
     FragColor = Colour;
-    
-//    vec3 ambient = vec3(texture(material.diffuse, TexCoords)) * light.ambient;
-//
-//    vec3 norm = normalize(Normal);
-//    vec3 lightDir = normalize(-(light.direction)); //normalize(lightPos - FragPos);
-//
-//    float diff = max(dot(norm, lightDir), 0.0);
-//    vec3 diffuse = diff * light.diffuse * vec3(texture(material.diffuse, TexCoords));
-//
-//    float specularStrength = 0.5;
-//    vec3 nFragPos = normalize(FragPos);
-//    vec3 reflectDir = reflect(-lightDir, norm);
-//    float spec = pow(max(dot(-nFragPos, reflectDir), 0.0), material.shininess);
-//    //vec3 specular = vec3(texture(material.specular, TexCoords)) * spec * light.specular;
-//    vec3 specular = vec3(0.0) * spec * light.specular;
-//
-//    vec3 result = ambient + diffuse + specular;
-//    FragColor = vec4(result, 1.0);
 }

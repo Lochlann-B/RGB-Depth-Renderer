@@ -56,11 +56,7 @@ public class DepthTessellator
                     depthMap[y + yres, x + xres] * ((y + yres - cy) / fy), depthMap[y + yres, x + xres]);
                 var vertex4 = new Vector3(depthMap[y + yres, x] * ((x - cx) / fx),
                     depthMap[y + yres, x] * ((y + yres - cy) / fy), depthMap[y + yres, x]);
-
-                // var vertex1 = new Vector3( ((x-cx)/fx), ((y-cy)/fy), 1);
-                // var vertex2 = new Vector3( ((x+192-cx)/fx), ((y-cy)/fy), 1);
-                // var vertex3 = new Vector3( ((x+192-cx)/fx), ((y+108-cy)/fy), 1 );
-                // var vertex4 = new Vector3( ((x-cx)/fx), ((y+108-cy)/fy), 1 );
+                
 
                 var triangle1 = new Triangle(vertex1, vertex2, vertex3);
                 var triangle2 = new Triangle(vertex1, vertex3, vertex4);
@@ -323,22 +319,6 @@ public class DepthTessellator
         watch.Reset();
         watch.Start();
 
-        // var xs = positionData.Where((_, i) => i % 3 == 0 );
-        // var ys = positionData.Where((_, i) => i % 3 == 1 );
-        // var zs = positionData.Where((_, i) => i % 3 == 2 );
-        //
-        // var enumerablex = xs as float[] ?? xs.ToArray();
-        // xRanges[0] = enumerablex.Min();
-        // xRanges[1] = enumerablex.Max();
-        //
-        // var enumerabley = ys as float[] ?? ys.ToArray();
-        // yRanges[0] = enumerabley.Min();
-        // yRanges[1] = enumerabley.Max();
-        //
-        // var enumerablez = zs as float[] ?? zs.ToArray();
-        // zRanges[0] = enumerablez.Min();
-        // zRanges[1] = enumerablez.Max();
-
         var (xRanges, yRanges, zRanges) = GetMeshRangesUsingComputeShader(positionData);
 
         watch.Stop();
@@ -352,25 +332,6 @@ public class DepthTessellator
 
     private static (float[], float[], float[]) GetMeshRangesUsingComputeShader(float[] positionsArray)
     {
-        // var x = new float[2];
-        // var y = new float[2];
-        // var z = new float[2];
-        //
-        // var xs = positionsArray.Where((_, i) => i % 3 == 0 );
-        // var ys = positionsArray.Where((_, i) => i % 3 == 1 );
-        // var zs = positionsArray.Where((_, i) => i % 3 == 2 );
-        //
-        // var enumerablex = xs as float[] ?? xs.ToArray();
-        // x[0] = enumerablex.Min();
-        // x[1] = enumerablex.Max();
-        //
-        // var enumerabley = ys as float[] ?? ys.ToArray();
-        // y[0] = enumerabley.Min();
-        // y[1] = enumerabley.Max();
-        //
-        // var enumerablez = zs as float[] ?? zs.ToArray();
-        // z[0] = enumerablez.Min();
-        // z[1] = enumerablez.Max();
 
         var watch = Stopwatch.StartNew();
         

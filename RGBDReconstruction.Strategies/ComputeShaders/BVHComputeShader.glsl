@@ -31,10 +31,8 @@ int findMSB64(uint64_t value) {
     uint lower = uint(value & 0xFFFFFFFFul);
 
     if (upper != 0) {
-        // MSB is in the upper 32 bits
-        return 32 + findMSB(upper); // Add 32 because findMSB returns index in [0, 31]
+        return 32 + findMSB(upper); 
     } else {
-        // MSB is in the lower 32 bits
         return findMSB(lower);
     }
 }

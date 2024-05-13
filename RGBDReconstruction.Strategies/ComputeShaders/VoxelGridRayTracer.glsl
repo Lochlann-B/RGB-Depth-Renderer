@@ -96,9 +96,6 @@ double roundToInterval(double v, double interval) {
 }
 
 int index(highp float px, highp float py, highp float pz) {
-//    highp float nX = roundToInterval(px - xStart, resolution);
-//    highp float nY = roundToInterval(py - yStart, resolution);
-//    highp float nZ = roundToInterval(pz - zStart, resolution);
 
     double nX = roundToInterval(double(px) - double(xStart), double(resolution));
     double nY = roundToInterval(double(py) - double(yStart), double(resolution));
@@ -305,7 +302,7 @@ void main() {
         }
     }
     
-//    voxelValues[index(voxel.x, voxel.y, voxel.z)] = minDist;
+
     seenVoxels[idx] = vec4(voxel, 1.0f);
     
     if (minDist < 1/0f) {
@@ -346,9 +343,5 @@ void main() {
 //        voxelColours[voxIdx] = vec4((voxel.x + 2) / 2f, (voxel.y + 2) / 3f,
 //             (voxel.z + 0.25f) / 6f, 1.0f);
 
-//        voxelColours[voxIdx] = vec4(imgCoord.x/1920f, (voxel.y + 2) / 3f,
-//        (voxel.z + 0.25f) / 6f, 1.0f);
-        
-        //atomicCounterIncrement(closeVoxelsIdx);
     }
 }

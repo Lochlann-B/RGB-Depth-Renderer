@@ -80,12 +80,10 @@ public class BVHReconstruction : IReconstructionApplication
 
         var multiViewReconstructor = new MultiViewVoxelGridReconstruction(0, 500);
         var mesh = multiViewReconstructor.GetFrameGeometry(180);
-        // var textureData = multiViewReconstructor.GetRGBData(1);
         var contiguousMeshData = mesh.GetContiguousMeshData();
         
         GL.BufferData(BufferTarget.ArrayBuffer, contiguousMeshData.Length * sizeof(float), contiguousMeshData, BufferUsageHint.StaticDraw);
         
-        // VAO - Vertex Array Object - specifies how the vertex attribute information is stored, formatted, and which buffers the data comes from
         _vertexArrayObject = GL.GenVertexArray();
         GL.BindVertexArray(_vertexArrayObject);
         
@@ -102,10 +100,6 @@ public class BVHReconstruction : IReconstructionApplication
         var normalLoc = _lightingShader.GetAttribLocation("aNormal");
         GL.EnableVertexAttribArray(normalLoc);
         GL.VertexAttribPointer(normalLoc, 3, VertexAttribPointerType.Float, false, mesh.MeshLayout.Stride * sizeof(float), 3 * sizeof(float));
-
-        // var texLoc = _lightingShader.GetAttribLocation("aTexCoords");
-        // GL.EnableVertexAttribArray(texLoc);
-        // GL.VertexAttribPointer(texLoc, 2, VertexAttribPointerType.Float, false, mesh.MeshLayout.Stride * sizeof(float), 6 * sizeof(float));
 
         var colourLoc = _lightingShader.GetAttribLocation("aColour");
         GL.EnableVertexAttribArray(colourLoc);
@@ -134,24 +128,6 @@ public class BVHReconstruction : IReconstructionApplication
         _lightingShader.SetUniformMatrix4f("projection", ref _projection);
 
         _lightPos = new Vector3(-0.0f, -0.0f, 0.0f);
-
-        
-
-        //_diffuseMap = new Texture("./resources/container2.png");
-        // _diffuseMap = new Texture("C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\rgb\\frame_0001_cam_001.png");
-        // _diffuseMap.Use(TextureUnit.Texture0);
-
-        // var idx = 0;
-        // foreach (var tex in textureData)
-        // {
-        //     var texture = new Texture(tex, 1920, 1080);
-        //     texture.Use(TextureUnit.Texture0 + idx);
-        //     _textures.Add(texture);
-        //     idx++;
-        // }
-
-        //_specularMap = new Texture("./resources/container2_specular.png");
-        //_specularMap.Use(TextureUnit.Texture1);
     }
 
     public void RenderFrame(FrameEventArgs args)
@@ -166,21 +142,11 @@ public class BVHReconstruction : IReconstructionApplication
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
         
         GL.BindVertexArray(_vertexArrayObject);
-        // _diffuseMap.Use(TextureUnit.Texture0);
-
-
-        // _animPose = new Matrix4(new Vector4(0.622f, -0.0668f, 0.7797f, 0f),
-        //     new Vector4(0f, 0.996f, 0.0854f, 0f),
-        // new Vector4(-0.782f, -0.0568f, 0.6202f, 0f),
-        // new Vector4(0.184f, 0.25f, -1.103f, 1f));
-        
-        // _view.Column3 = new Vector4(_animPose.ExtractTranslation(), 1.0f);
         
         _lightingShader.Use();
         _lightingShader.SetUniformMatrix4f("model", ref _model);
         _lightingShader.SetUniformMatrix4f("view", ref _view);
-        // Console.WriteLine(_view);
-        // _lightingShader.SetUniformMatrix4f("view", ref _animPose);
+
         _lightingShader.SetUniformMatrix4f("projection", ref _projection);
 
         var vLightPos = new Vector4(_lightPos, 0.0f);
@@ -235,8 +201,7 @@ public class BVHReconstruction : IReconstructionApplication
                 var interpPos = LBPos + interpVal * (UBPos - LBPos);
                 var interpRot = LBRot + interpVal * (UBRot - LBRot);
 
-                // interpPos[0] = 0.18f;
-                // interpPos[2] *= -1;
+
                 interpPos.X *= -1;
                 interpPos.Z *= -1;
                 
@@ -246,7 +211,6 @@ public class BVHReconstruction : IReconstructionApplication
                 var Rz = Matrix4.CreateRotationZ((float)Math.PI*interpRot.Y/180f);
 
                 _animPose = Rx * Ry * Rz;
-                // _animPose.Transpose();
 
                 _camera._position = interpPos.Xzy;
                 _camera._roll = interpRot.Y;

@@ -22,7 +22,6 @@ public class ComputeShader
         if (successS == 0)
         {
             string infoLog = GL.GetShaderInfoLog(ComputeShader);
-            // TODO: Change to error style reporting
             Console.WriteLine(infoLog);
         }
 
@@ -118,7 +117,6 @@ public class ComputeShader
     {
         if (_disposedValue == false)
         {
-            // TODO: Change to error warning
             Console.WriteLine("GPU Resource leak! Did you forget to call Dispose()?");
         }
     }

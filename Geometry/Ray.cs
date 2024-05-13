@@ -4,15 +4,6 @@ namespace Geometry;
 
 public class Ray(Vector3 source, Vector3 direction) : IRay
 {
-    // triangle struct will look a little like this:
-    /*
-     *  struct triangle:
-     *      Vec3[] vertexpositions;
-     *      vec3[] sides;
-     *      vec3 normal;
-     */
-    // Kernel for intersecting ray with triangle
-    // Parameters: index of triangle, list of intersections (as bool array of len triangles - 1 for intersection), list of triangles, ray
     
     public List<Vector3> IntersectMesh(Mesh mesh)
     {

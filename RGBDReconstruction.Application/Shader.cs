@@ -130,7 +130,6 @@ public class Shader
     {
         if (_disposedValue == false)
         {
-            // TODO: Change to error warning
             Console.WriteLine("GPU Resource leak! Did you forget to call Dispose()?");
         }
     }

@@ -59,8 +59,7 @@ public class Texture
         GL.BindTexture(TextureTarget.Texture2D, _handle);
         GL.TexStorage2D(TextureTarget2d.Texture2D, 1, SizedInternalFormat.R32f, texValues.GetLength(1),
             texValues.GetLength(0));
-        // GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texValues.GetLength(1), texValues.GetLength(0),
-        //     PixelFormat.Red, PixelType.Float, IntPtr.Zero);#
+
         GL.TexImage2D(TextureTarget.Texture2D, 
             0, 
             PixelInternalFormat.R32f, 
@@ -78,7 +77,6 @@ public class Texture
         GL.BufferData(BufferTarget.PixelUnpackBuffer, _width * _height * 4, IntPtr.Zero, BufferUsageHint.StreamDraw); // Assuming RGBA
         GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0); // Unbind PBO
         
-        // GL.BindTexture(TextureTarget.Texture2D, 0);
         UpdateWithFloatArrayData(texValues);
     }
 
@@ -104,10 +102,6 @@ public class Texture
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-        
-        // ErrorCode errorCode = GL.GetError();
-       // Console.WriteLine(errorCode);
-        
     }
 
     public Texture(byte[] data, int width, int height)
@@ -122,8 +116,6 @@ public class Texture
         
         StbImage.stbi_set_flip_vertically_on_load(1);
         
-        //GL.BindTexture(TextureTarget.Texture2D, _handle);
-        //GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, data);
         
         GL.TexImage2D(TextureTarget.Texture2D, 
             0, 
@@ -187,8 +179,6 @@ public class Texture
     public void UpdateWithPointer(IntPtr dataPtr, bool useNearestNeighbour)
     { 
         StbImage.stbi_set_flip_vertically_on_load(1);
-        // GL.BindTexture(TextureTarget.Texture2D, _handle);
-        // GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Rgb, PixelType.UnsignedByte, dataPtr);
         try
         {
             GL.BindTexture(TextureTarget.Texture2D, _handle);
@@ -214,10 +204,7 @@ public class Texture
             {
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-                // GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
-                //     (int)TextureMinFilter.Linear);
-                // GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
-                //     (int)TextureMagFilter.Linear);
+
             }
             
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS,
@@ -229,8 +216,7 @@ public class Texture
         {
             Console.WriteLine("Bad memory attempted access! Aborting texture upload");
         }
-        // ErrorCode errorCode = GL.GetError();
-        // Console.WriteLine(errorCode);
+
     }
 
     public unsafe void UpdateWithByteData(byte[] data)
@@ -240,57 +226,9 @@ public class Texture
             var pter = (IntPtr)p;
             
             GL.BindTexture(TextureTarget.Texture2D, _handle);
-            // watch.Stop();
-            // Console.WriteLine("bind time: {0}ms", watch.ElapsedMilliseconds);
-            // watch.Restart();
+
             GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Rgba, PixelType.UnsignedByte, pter);
-            // watch.Stop();
         }
-        
-        return;
-        
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, _pboId);
-
-        // Map the buffer object into client's memory
-        IntPtr ptr = GL.MapBuffer(BufferTarget.PixelUnpackBuffer, BufferAccess.WriteOnly);
-        
-        // System.Buffer.BlockCopy(data, 0, ptr, 0, data.Length);
-        GL.BufferData(BufferTarget.PixelUnpackBuffer, data.Length, data, BufferUsageHint.StreamDraw);
-
-        // Copy data to the PBO
-        // var watch = Stopwatch.StartNew();
-        // Marshal.Copy(data, 0, ptr, data.Length);
-        // watch.Stop();
-        // Console.WriteLine("marshal copy time: {0}ms", watch.ElapsedMilliseconds);
-
-        // Unmap the buffer
-        GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
-
-        
-        
-        // var watch = new Stopwatch();
-        // watch.Start();
-        GL.BindTexture(TextureTarget.Texture2D, _handle);
-        // watch.Stop();
-        // Console.WriteLine("bind time: {0}ms", watch.ElapsedMilliseconds);
-        // watch.Restart();
-        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _width, _height, PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
-        // watch.Stop();
-        // Console.WriteLine("time taken to upload texture: {0}ms", watch.ElapsedMilliseconds);
-        
-        // GL.TexImage2D(TextureTarget.Texture2D, 
-        //     0, 
-        //     PixelInternalFormat.Rgba, 
-        //     _image.Width, 
-        //     _image.Height, 
-        //     0, 
-        //     PixelFormat.Rgba, 
-        //     PixelType.UnsignedByte, 
-        //     data);
-        
-        // Unbind PBO and Texture
-        GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0);
-        GL.BindTexture(TextureTarget.Texture2D, 0);
     }
 
     public unsafe void UpdateWithFloatArrayData(float[,] data)

@@ -30,6 +30,22 @@ public class MultiViewFramePreparer
                 _viewImgProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\chain_collision");
                 _viewVidProcessor = new MultiViewVideoProcessor(@"C:\Users\Locky\Desktop\renders\chain_collision");
                 break;
+            case 1:
+                _viewImgProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\forest");
+                _viewVidProcessor = new MultiViewVideoProcessor(@"C:\Users\Locky\Desktop\renders\forest");
+                break;
+            case 2:
+                _viewImgProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\skibidi toilet");
+                _viewVidProcessor = new MultiViewVideoProcessor(@"C:\Users\Locky\Desktop\renders\skibidi toilet");
+                break;
+            case 3:
+                _viewImgProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\palace");
+                _viewVidProcessor = new MultiViewVideoProcessor(@"C:\Users\Locky\Desktop\renders\palace");
+                break;
+            case 4:
+                _viewImgProcessor = new MultiViewProcessor(@"C:\Users\Locky\Desktop\renders\detective desk");
+                _viewVidProcessor = new MultiViewVideoProcessor(@"C:\Users\Locky\Desktop\renders\detective desk");
+                break;
         }
     }
 
@@ -73,20 +89,10 @@ public class MultiViewFramePreparer
             DepthCamPoses[i] = mat;
         }
         
-        // Console.WriteLine("Current directory: " + Environment.CurrentDirectory);
-        // Console.WriteLine("Running in {0}-bit mode.", Environment.Is64BitProcess ? "64" : "32");
-        // FFmpegBinariesHelper.RegisterFFmpegBinaries();
-        // DynamicallyLoadedBindings.Initialize();
-        // Console.WriteLine($"FFmpeg version info: {ffmpeg.av_version_info()}");
         _viewVidProcessor.PrepareVideoFiles();
 
         _rgbTextures = new List<Texture>();
         _depthTextures = new List<Texture>();
-        
-        // var rgbdepth = await _viewVidProcessor.Begin();
-        
-        // Task.Run(() => _viewVidProcessor.LoadFramesRGBAllCams());
-        // Task.Run(() => _viewVidProcessor.LoadFramesDepthAllCams());
 
         var rgbdepth = _viewVidProcessor.AwaitNextFrame();
 
@@ -106,7 +112,6 @@ public class MultiViewFramePreparer
         {
             _depthTextures[i -  _depthTextures.Count].Use(TextureUnit.Texture0 + i);
         }
-        // _depthTextures
     }
     
     public void UseRGBMapTextures(int[] arr)
@@ -158,32 +163,11 @@ public class MultiViewFramePreparer
         }
 
         _incTime = 0;
-        // var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-        // GL.WaitSync(fence, WaitSyncFlags.None, -1);
-        // GL.DeleteSync(fence);
-        // var watch = Stopwatch.StartNew();
-        // Task.Run((() => UpdateFrames(nextFrameData))).ContinueWith(t => {_elapsedTimeSinceLastFrame = 0d;
-        // _incTime = 1;
-        // }, TaskContinuationOptions.OnlyOnRanToCompletion);
+
         UpdateFrames(nextFrameData);
 
         _elapsedTimeSinceLastFrame = 0d;
         _incTime = 1;
-
-        // for (int i = 0; i < nextFrameData.Length-5; i++)
-        // {
-        //     var rgb = nextFrameData[i].Item1;
-        //     var depth = nextFrameData[i].Item2;
-        //     
-        //     _rgbTextures[i].UpdateWithByteData(rgb);
-        //     //_depthTextures[i].UpdateWithFloatArrayData(depth);
-        // }
-        // watch.Stop();
-        // Console.WriteLine(watch.ElapsedMilliseconds);
-        // var fence2 = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0);
-        // GL.WaitSync(fence2, WaitSyncFlags.None, -1);
-        // GL.DeleteSync(fence2);
-        // _elapsedTimeSinceLastFrame = 0d;
     }
 
     private void UpdateFrames((byte[], float[,])[] nextFrameData)

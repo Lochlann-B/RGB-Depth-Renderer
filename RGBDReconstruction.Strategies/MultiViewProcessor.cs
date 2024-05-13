@@ -22,8 +22,6 @@ public class MultiViewProcessor(String directoryPath)
 
     protected int _maxFrameDataSize = 1;
 
-    // private int[] _currentFrameRGBs;
-    // private int[] _currentFrameDepths;
 
     protected int _currentFrameRGB = 1;
     protected int _currentFrameDepth = 1;
@@ -50,18 +48,6 @@ public class MultiViewProcessor(String directoryPath)
 
     public (byte[], float[,])[]? GetNextAvailableFrame()
     {
-        // if ((_RGBFrameData.Count < 200 || _depthFrameData.Count < 200) && _nextFrameToReturn == 1)
-        // {
-        //     return null;
-        // }
-        //
-        // if (!_RGBFrameData.TryPeek(out var _) || !_depthFrameData.TryPeek(out var _)) return null;
-        //
-        // _RGBFrameData.TryPeek(out var rgb);
-        // if (rgb.Key != _nextFrameToReturn) return null;
-        //
-        // _depthFrameData.TryPeek(out var depth);
-        // if (depth.Key != _nextFrameToReturn) return null;
 
         if (!NextFrameDataIsPreparedForAllCameras())
         {
@@ -122,9 +108,9 @@ public class MultiViewProcessor(String directoryPath)
             {
                 
                 
-                if (_depthFrameDatas[0].Count > _maxFrameDataSize)// || _semaphoreDepth.CurrentCount == 0)
+                if (_depthFrameDatas[0].Count > _maxFrameDataSize)
                 {
-                    // _semaphoreDepth.Release();
+     
                     await Task.Delay(5);
                     continue;
                 }
@@ -133,20 +119,7 @@ public class MultiViewProcessor(String directoryPath)
                 int frameIdx = Interlocked.Increment(ref _currentFrameDepth) - 1;
                 Task.Run(() => LoadFrameForEachDepthCam(frameIdx)).ContinueWith(t => _semaphoreDepth.Release(),
                     TaskContinuationOptions.OnlyOnRanToCompletion);
-                // for (int i = 0; i < _numCams; i++);
-                // {
-                //     int camIdx = i;
-                //     
-                //     Task.Run(() => LoadFrameDepthAsync(frameIdx, GetDepthMapFileName(frameIdx, camIdx), camIdx));
-                //     //LoadFrameDepthAsync(frameIdx, GetDepthMapFileName(frameIdx, camIdx), camIdx);
-                //     //_currentFrameDepth++;
-                // }
 
-                //_semaphoreDepth.Release();
-                // uses camera 1
-                // int frameIdx = Interlocked.Increment(ref _currentFrameDepths[camIdx]) - 1;
-                // Task.Run(() => LoadFrameDepthAsync(frameIdx, GetDepthMapFileName(frameIdx, camIdx+1), camIdx)).ContinueWith(t => _semaphoreDepth.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
-                // //_currentFrameDepth++;
             }
         } catch(Exception e)
         {
@@ -161,15 +134,14 @@ public class MultiViewProcessor(String directoryPath)
             for (int i = 0; i < _numCams; i++)
             {
                 int camIdx = i;
-
-                //Task.Run(() => LoadFrameDepthAsync(frameIdx, GetDepthMapFileName(frameIdx, camIdx), camIdx));
+                
                 LoadFrameDepthAsync(frameIdx, GetDepthMapFileName(frameIdx, camIdx), camIdx);
-                //_currentFrameDepth++;
+
             }
         }
         catch (Exception e)
         {
-            //Console.WriteLine(e);
+
             _notReachedFinalDepthFrame = false;
         }
     }
@@ -182,9 +154,8 @@ public class MultiViewProcessor(String directoryPath)
             {
                 int camIdx = i;
 
-                //Task.Run(() => LoadFrameRGBAsync(frameIdx, GetPNGFileName(frameIdx, camIdx+1), camIdx));
                 LoadFrameRGBAsync(frameIdx, GetPNGFileName(frameIdx, camIdx + 1), camIdx);
-                //_currentFrameDepth++;
+              
             }
         }
         catch (Exception e)
@@ -212,19 +183,6 @@ public class MultiViewProcessor(String directoryPath)
 
                 Task.Run((() => LoadFrameForEachRGBCam(frameIdx))).ContinueWith(t => _semaphoreRGB.Release(),
                     TaskContinuationOptions.OnlyOnRanToCompletion);
-                // for (int i = 0; i < _numCams; i++)
-                // {
-                //     int camIdx = i;
-                //     
-                //     Task.Run(() => LoadFrameRGBAsync(frameIdx, GetPNGFileName(frameIdx, camIdx), camIdx));//.ContinueWith(t => _semaphoreRGB.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
-                //     //_currentFrameRGB++;    
-                // }
-
-                // _semaphoreRGB.Release();
-                // uses camera 1
-                // int frameIdx = Interlocked.Increment(ref _currentFrameRGBs[cam-1]) - 1;
-                // Task.Run(() => LoadFrameRGBAsync(frameIdx, GetPNGFileName(frameIdx, cam), cam));//.ContinueWith(t => _semaphoreRGB.Release(), TaskContinuationOptions.OnlyOnRanToCompletion);
-                // //_currentFrameRGB++;
             }
         } catch(Exception e)
         {
@@ -310,10 +268,7 @@ public class MultiViewProcessor(String directoryPath)
             // Read each line in the file
             for (int i = 0; i < lines.Length; i++)
             {
-                // if (numesleft == 0)
-                // {
-                //     break;
-                // }
+
                 
                 var line = lines[i];
                 if (i == 0)
@@ -341,13 +296,7 @@ public class MultiViewProcessor(String directoryPath)
                         if (isVoxel)
                         {
                             var Rx = Matrix4.CreateRotationX(-(float)Math.PI*((-rx)+90f)/180f);
-
-                            // float angle = -5f;
-                            // float radian = angle * (float)Math.PI / 180f;
-                            // var RotX = new Matrix4(new Vector4(1, 0, 0, 0),
-                            //     new Vector4(0, (float)Math.Cos(radian), (float)-Math.Sin(radian),0),
-                            //     new Vector4(0, (float)Math.Sin(radian), (float)Math.Cos(radian),0),
-                            //     new Vector4(0,0,0,0));
+                            
                         
                             var Ry = Matrix4.CreateRotationY((float)Math.PI*(rz+180f)/180f);
                             var Rz = Matrix4.CreateRotationZ((float)Math.PI*ry/180f);
@@ -362,7 +311,7 @@ public class MultiViewProcessor(String directoryPath)
                         {
                             var Rx = Matrix4.CreateRotationX((float)Math.PI*(rx-90f)/180f);
                             var Ry = Matrix4.CreateRotationY((float)Math.PI*(rz)/180f);
-                            var Rz = Matrix4.CreateRotationZ((float)Math.PI*ry/180f);
+                            var Rz = Matrix4.CreateRotationZ((float)Math.PI*(-ry)/180f);
                             var T = Matrix4.CreateTranslation(new Vector3(px, pz, py));
                             var rot = Rz * Ry * Rx;
                             var R = rot.Inverted() * T;
@@ -428,14 +377,7 @@ public class MultiViewProcessor(String directoryPath)
                 _RGBFrameDatas[i] = new ConcurrentPriorityQueue<int, byte[]>();
                 _depthFrameDatas[i] = new ConcurrentPriorityQueue<int, float[,]>();
             }
-            // _RGBFrameDatas = Enumerable.Repeat(new ConcurrentPriorityQueue<int, byte[]>(), _numCams).ToArray();
-            // _depthFrameDatas = Enumerable.Repeat(new ConcurrentPriorityQueue<int, float[,]>(), _numCams).ToArray();
-            // _RGBFrameDatas = new List<ConcurrentPriorityQueue<int, byte[]>>(Enumerable.Repeat(new ConcurrentPriorityQueue<int, byte[]>(), _numCams));
-            // _depthFrameDatas = new List<ConcurrentPriorityQueue<int, float[,]>>(Enumerable.Repeat(new ConcurrentPriorityQueue<int, float[,]>(), _numCams));
-            
-            
-            // _currentFrameDepths = Enumerable.Repeat(1, _numCams).ToArray();
-            // _currentFrameRGBs = Enumerable.Repeat(1, _numCams).ToArray();
+
             return list;
         }
         catch (IOException e)
