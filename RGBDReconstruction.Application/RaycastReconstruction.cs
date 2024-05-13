@@ -58,8 +58,8 @@ public class RaycastReconstruction : IReconstructionApplication
     private int _frame = 1;
     private int _vidFrame = 1;
     
-    private string _evalPath = "C:\\Users\\Locky\\Desktop\\renders\\detective desk\\evaluation data\\testcam\\";
-    private string _keyFrameText = "C:\\Users\\Locky\\Desktop\\renders\\detective desk\\evaluation data\\testcamkeyframes.txt";
+    private string _evalPath = "C:\\Users\\2337G\\Desktop\\renders\\detective desk\\evaluation data\\testcam\\";
+    private string _keyFrameText = "C:\\Users\\2337G\\Desktop\\renders\\detective desk\\evaluation data\\testcamkeyframes.txt";
 
     // private double _elapsedTime = 0d;
 
@@ -86,8 +86,8 @@ public class RaycastReconstruction : IReconstructionApplication
     private String _refreshTestName = "r_detective_desk_3.csv";
     private String _frameTestName = "f_detective_desk_3.csv";
     
-    private string _refreshRateFilePath = "C:\\Users\\Locky\\Desktop\\renders\\detective desk\\evaluation data\\refresh rates\\";
-    private string _frameRatesFilePath = "C:\\Users\\Locky\\Desktop\\renders\\detective desk\\evaluation data\\frame rates\\";
+    private string _refreshRateFilePath = "C:\\Users\\2337G\\Desktop\\renders\\detective desk\\evaluation data\\refresh rates\\";
+    private string _frameRatesFilePath = "C:\\Users\\2337G\\Desktop\\renders\\detective desk\\evaluation data\\frame rates\\";
 
     public void Init(int windowWidth, int windowHeight)
     {

@@ -53,8 +53,8 @@ public class BVHReconstruction : IReconstructionApplication
     
     private int _vidFrame = 180;
     
-    private string _evalPath = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\virtualcam_samepos_asdatacam\\cam1\\";
-    private string _keyFrameText = "C:\\Users\\Locky\\Desktop\\renders\\chain_collision\\evaluation data\\testcamkeyframes.txt";
+    private string _evalPath = "C:\\Users\\2337G\\Desktop\\renders\\chain_collision\\evaluation data\\virtualcam_samepos_asdatacam\\cam1\\";
+    private string _keyFrameText = "C:\\Users\\2337G\\Desktop\\renders\\chain_collision\\evaluation data\\testcamkeyframes.txt";
     
     private Matrix4 _animPose;
     
